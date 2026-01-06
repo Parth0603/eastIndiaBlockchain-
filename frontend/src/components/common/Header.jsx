@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { useWallet } from '../../hooks/useWallet';
@@ -6,9 +6,20 @@ import QuickAuth from './QuickAuth';
 import CurrencyOverlay from './CurrencyOverlay';
 
 const Header = () => {
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, user, logout, isLoading } = useAuth();
   const { isConnected, account, connectWallet, disconnectWallet } = useWallet();
   const [showQuickAuth, setShowQuickAuth] = useState(false);
+  const navigate = useNavigate();
+
+  const handleSignOut = () => {
+    try {
+      logout();
+      navigate('/'); // Redirect to home page
+      console.log('User signed out - redirected to home page');
+    } catch (error) {
+      console.error('Failed to sign out:', error);
+    }
+  };
 
   const handleDisconnect = () => {
     try {
@@ -68,13 +79,28 @@ const Header = () => {
               <CurrencyOverlay />
             </div>
             
-            {/* Show Sign Up button when not connected or not authenticated */}
-            {(!isConnected || !isAuthenticated) && (
+            {/* Show Sign Up button when not connected or not authenticated (but not while loading) */}
+            {!isLoading && (!isConnected || !isAuthenticated) && (
               <Link 
                 to="/signup" 
                 className="bg-blue-500 text-white px-3 py-2 rounded-lg hover:bg-blue-600 font-medium transition-all duration-200 text-sm whitespace-nowrap"
               >
                 Sign Up
+              </Link>
+            )}
+
+            {/* Show Dashboard button for authenticated users */}
+            {!isLoading && isAuthenticated && user?.roles && (
+              <Link 
+                to={
+                  user.roles.includes('admin') ? '/admin' :
+                  user.roles.includes('beneficiary') ? '/beneficiary' :
+                  user.roles.includes('vendor') ? '/vendor' :
+                  '/donor'
+                }
+                className="bg-green-500 text-white px-3 py-2 rounded-lg hover:bg-green-600 font-medium transition-all duration-200 text-sm whitespace-nowrap"
+              >
+                My Dashboard
               </Link>
             )}
 
@@ -97,7 +123,7 @@ const Header = () => {
                   <span className="text-sm text-gray-700 font-medium">
                     {truncateAddress(account)}
                   </span>
-                  {isAuthenticated && user?.roles && (
+                  {!isLoading && isAuthenticated && user?.roles && (
                     <span className="text-sm text-green-600 font-medium capitalize">
                       {user.roles[0]}
                     </span>
@@ -105,7 +131,7 @@ const Header = () => {
                 </div>
                 
                 {/* Quick Auth Button (if connected but not authenticated) */}
-                {!isAuthenticated && (
+                {!isLoading && !isAuthenticated && (
                   <button
                     onClick={() => setShowQuickAuth(true)}
                     className="inline-flex items-center px-2 py-2 text-sm bg-yellow-100 text-yellow-700 hover:bg-yellow-200 rounded-lg transition-colors whitespace-nowrap"
@@ -118,14 +144,28 @@ const Header = () => {
                   </button>
                 )}
                 
+                {/* Sign Out Button (if authenticated - keeps wallet connected) */}
+                {!isLoading && isAuthenticated && (
+                  <button
+                    onClick={handleSignOut}
+                    className="inline-flex items-center px-2 py-2 text-sm bg-orange-100 text-orange-700 hover:bg-orange-200 rounded-lg transition-colors whitespace-nowrap"
+                    title="Sign out (keep wallet connected)"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    <span className="hidden sm:inline ml-1">Sign Out</span>
+                  </button>
+                )}
+                
                 {/* Disconnect Button */}
                 <button
                   onClick={handleDisconnect}
                   className="inline-flex items-center px-2 py-2 text-sm bg-red-100 text-red-700 hover:bg-red-200 rounded-lg transition-colors whitespace-nowrap"
-                  title="Disconnect wallet"
+                  title="Disconnect wallet completely"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                   <span className="hidden sm:inline ml-1">Disconnect</span>
                 </button>
@@ -173,7 +213,7 @@ const Header = () => {
             </Link>
             
             {/* Role-based Dashboard Links */}
-            {isAuthenticated && user?.roles?.includes('admin') && (
+            {!isLoading && isAuthenticated && user?.roles?.includes('admin') && (
               <Link 
                 to="/admin" 
                 className="text-purple-600 hover:text-purple-700 font-medium transition-colors duration-200 text-sm whitespace-nowrap"
@@ -181,7 +221,7 @@ const Header = () => {
                 Admin Panel
               </Link>
             )}
-            {isAuthenticated && user?.roles?.includes('beneficiary') && (
+            {!isLoading && isAuthenticated && user?.roles?.includes('beneficiary') && (
               <Link 
                 to="/beneficiary" 
                 className="text-green-600 hover:text-green-700 font-medium transition-colors duration-200 text-sm whitespace-nowrap"
@@ -189,7 +229,7 @@ const Header = () => {
                 My Dashboard
               </Link>
             )}
-            {isAuthenticated && user?.roles?.includes('vendor') && (
+            {!isLoading && isAuthenticated && user?.roles?.includes('vendor') && (
               <Link 
                 to="/vendor" 
                 className="text-orange-600 hover:text-orange-700 font-medium transition-colors duration-200 text-sm whitespace-nowrap"
@@ -197,7 +237,7 @@ const Header = () => {
                 Vendor Portal
               </Link>
             )}
-            {isAuthenticated && !user?.roles?.includes('admin') && !user?.roles?.includes('beneficiary') && !user?.roles?.includes('vendor') && (
+            {!isLoading && isAuthenticated && !user?.roles?.includes('admin') && !user?.roles?.includes('beneficiary') && !user?.roles?.includes('vendor') && (
               <Link 
                 to="/donor" 
                 className="text-blue-600 hover:text-blue-700 font-medium transition-colors duration-200 text-sm whitespace-nowrap"

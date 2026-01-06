@@ -22,6 +22,88 @@ const PublicTransparency = () => {
 
   const [transactionsLoading, setTransactionsLoading] = useState(true);
   const [transactionsError, setTransactionsError] = useState(null);
+  const [usingFallbackData, setUsingFallbackData] = useState(false);
+
+  // Fallback data for when backend is unavailable or rate limited
+  const fallbackStats = {
+    totalFundsReceived: 1250000, // $1.25M
+    fundsDistributed: 980000,    // $980K
+    activeBeneficiaries: 3450,
+    loading: false,
+    error: null
+  };
+
+  const fallbackTransactions = [
+    {
+      id: 'tx-001',
+      type: 'donation',
+      amount: 5000,
+      from: '0x1234...5678',
+      to: 'Relief Fund',
+      timestamp: new Date(Date.now() - 1000 * 60 * 30), // 30 minutes ago
+      status: 'confirmed',
+      category: 'Emergency Relief'
+    },
+    {
+      id: 'tx-002',
+      type: 'distribution',
+      amount: 1200,
+      from: 'Relief Fund',
+      to: '0x9876...5432',
+      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 hours ago
+      status: 'confirmed',
+      category: 'Food Aid'
+    },
+    {
+      id: 'tx-003',
+      type: 'donation',
+      amount: 10000,
+      from: '0xabcd...efgh',
+      to: 'Relief Fund',
+      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 4), // 4 hours ago
+      status: 'confirmed',
+      category: 'Medical Supplies'
+    },
+    {
+      id: 'tx-004',
+      type: 'distribution',
+      amount: 800,
+      from: 'Relief Fund',
+      to: '0x5555...6666',
+      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 6), // 6 hours ago
+      status: 'confirmed',
+      category: 'Shelter Support'
+    },
+    {
+      id: 'tx-005',
+      type: 'donation',
+      amount: 25000,
+      from: '0x7777...8888',
+      to: 'Relief Fund',
+      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 8), // 8 hours ago
+      status: 'confirmed',
+      category: 'Emergency Relief'
+    }
+  ];
+
+  const fallbackFundFlow = {
+    categoryFlow: [
+      { category: 'Emergency Relief', amount: 450000, percentage: 36 },
+      { category: 'Food Aid', amount: 350000, percentage: 28 },
+      { category: 'Medical Supplies', amount: 200000, percentage: 16 },
+      { category: 'Shelter Support', amount: 150000, percentage: 12 },
+      { category: 'Education Support', amount: 100000, percentage: 8 }
+    ],
+    monthlyFlow: [
+      { month: 'Jan 2024', donations: 200000, distributions: 180000 },
+      { month: 'Feb 2024', donations: 250000, distributions: 220000 },
+      { month: 'Mar 2024', donations: 300000, distributions: 280000 },
+      { month: 'Apr 2024', donations: 280000, distributions: 260000 },
+      { month: 'May 2024', donations: 220000, distributions: 200000 }
+    ],
+    loading: false,
+    error: null
+  };
 
   // Fetch live statistics
   useEffect(() => {
@@ -43,11 +125,19 @@ const PublicTransparency = () => {
         }
       } catch (error) {
         console.error('Error fetching stats:', error);
-        setLiveStats(prev => ({
-          ...prev,
-          loading: false,
-          error: 'Failed to load statistics'
-        }));
+        
+        // Use fallback data for rate limiting or other errors
+        if (error.message.includes('Rate limit') || error.message.includes('429')) {
+          console.log('Using fallback stats due to rate limiting');
+          setLiveStats(fallbackStats);
+          setUsingFallbackData(true);
+        } else {
+          setLiveStats(prev => ({
+            ...prev,
+            loading: false,
+            error: 'Failed to load statistics'
+          }));
+        }
       }
     };
 
@@ -87,7 +177,16 @@ const PublicTransparency = () => {
         }
       } catch (error) {
         console.error('Error fetching transactions:', error);
-        setTransactionsError('Failed to load transactions');
+        
+        // Use fallback data for rate limiting or other errors
+        if (error.message.includes('Rate limit') || error.message.includes('429')) {
+          console.log('Using fallback transactions due to rate limiting');
+          setLiveTransactions(fallbackTransactions);
+          setTransactionsError(null);
+          setUsingFallbackData(true);
+        } else {
+          setTransactionsError('Failed to load transactions');
+        }
       } finally {
         setTransactionsLoading(false);
       }
@@ -117,11 +216,19 @@ const PublicTransparency = () => {
         }
       } catch (error) {
         console.error('Error fetching fund flow:', error);
-        setFundFlow(prev => ({
-          ...prev,
-          loading: false,
-          error: 'Failed to load fund flow data'
-        }));
+        
+        // Use fallback data for rate limiting or other errors
+        if (error.message.includes('Rate limit') || error.message.includes('429')) {
+          console.log('Using fallback fund flow due to rate limiting');
+          setFundFlow(fallbackFundFlow);
+          setUsingFallbackData(true);
+        } else {
+          setFundFlow(prev => ({
+            ...prev,
+            loading: false,
+            error: 'Failed to load fund flow data'
+          }));
+        }
       }
     };
 
@@ -194,6 +301,21 @@ const PublicTransparency = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {/* Fallback Data Notice */}
+        {usingFallbackData && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 mb-6">
+            <div className="flex items-center">
+              <svg className="w-5 h-5 text-yellow-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+              <div>
+                <p className="text-yellow-800 font-medium">Demo Mode Active</p>
+                <p className="text-yellow-700 text-sm">Backend is temporarily rate-limited. Showing demo data for demonstration purposes.</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Live Stats Cards */}
         <div className="grid md:grid-cols-3 gap-6 mb-12">
           <div className="bg-white rounded-3xl shadow-lg p-6">

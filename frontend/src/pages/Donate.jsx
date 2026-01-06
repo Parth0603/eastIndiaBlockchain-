@@ -1,18 +1,99 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
+import { useWallet } from '../hooks/useWallet';
+import { usePageTitle } from '../hooks/usePageTitle';
 import apiService from '../services/api';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 
 const Donate = () => {
   const navigate = useNavigate();
+  const { isAuthenticated, user, authenticateWithWallet } = useAuth();
+  const { isConnected, connectWallet, web3, account } = useWallet();
+  
+  // Set page title
+  usePageTitle('Campaigns');
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedDisasterType, setSelectedDisasterType] = useState('');
   const [selectedRegion, setSelectedRegion] = useState('');
+  const [showAdminModal, setShowAdminModal] = useState(false);
+  const [adminCredentials, setAdminCredentials] = useState({ id: '', password: '' });
+  const [adminError, setAdminError] = useState('');
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
 
   const disasterTypes = ['All', 'earthquake', 'flood', 'hurricane', 'wildfire', 'tornado', 'drought', 'tsunami'];
   const regions = ['All', 'Asia', 'Europe', 'Americas', 'Africa', 'Middle East', 'Oceania'];
+
+  // Dummy campaigns for demo
+  const dummyCampaigns = [
+    {
+      id: 'camp-001',
+      title: 'Turkey Earthquake Emergency Relief',
+      description: 'Urgent aid needed for earthquake victims in Turkey. Providing emergency shelter, food, and medical supplies.',
+      location: 'Turkey, Middle East',
+      disasterType: 'earthquake',
+      urgency: 'Critical',
+      raised: 125000,
+      goal: 200000,
+      beneficiaries: 1500,
+      categories: ['Emergency Shelter', 'Medical Aid', 'Food Relief'],
+      submittedAt: '2024-01-05T10:00:00Z'
+    },
+    {
+      id: 'camp-002',
+      title: 'Philippines Typhoon Recovery',
+      description: 'Supporting communities affected by Typhoon Mawar. Focus on rebuilding homes and restoring clean water access.',
+      location: 'Philippines, Asia',
+      disasterType: 'hurricane',
+      urgency: 'High',
+      raised: 89000,
+      goal: 150000,
+      beneficiaries: 800,
+      categories: ['Clean Water', 'Housing Reconstruction', 'Community Support'],
+      submittedAt: '2024-01-04T14:30:00Z'
+    },
+    {
+      id: 'camp-003',
+      title: 'California Wildfire Relief Fund',
+      description: 'Emergency assistance for families displaced by wildfires. Providing temporary housing and essential supplies.',
+      location: 'California, Americas',
+      disasterType: 'wildfire',
+      urgency: 'High',
+      raised: 67000,
+      goal: 100000,
+      beneficiaries: 450,
+      categories: ['Temporary Housing', 'Emergency Supplies', 'Family Support'],
+      submittedAt: '2024-01-03T09:15:00Z'
+    },
+    {
+      id: 'camp-004',
+      title: 'Bangladesh Flood Emergency',
+      description: 'Monsoon floods have displaced thousands. Urgent need for food, clean water, and medical assistance.',
+      location: 'Bangladesh, Asia',
+      disasterType: 'flood',
+      urgency: 'Critical',
+      raised: 45000,
+      goal: 120000,
+      beneficiaries: 2000,
+      categories: ['Food Relief', 'Clean Water', 'Medical Aid', 'Emergency Shelter'],
+      submittedAt: '2024-01-02T16:45:00Z'
+    },
+    {
+      id: 'camp-005',
+      title: 'Morocco Earthquake Recovery',
+      description: 'Long-term recovery support for earthquake-affected communities. Focus on rebuilding infrastructure and schools.',
+      location: 'Morocco, Africa',
+      disasterType: 'earthquake',
+      urgency: 'Medium',
+      raised: 78000,
+      goal: 180000,
+      beneficiaries: 1200,
+      categories: ['Infrastructure', 'Education Support', 'Community Rebuilding'],
+      submittedAt: '2024-01-01T11:20:00Z'
+    }
+  ];
 
   // Fetch campaigns from backend
   useEffect(() => {
@@ -21,27 +102,137 @@ const Donate = () => {
         setLoading(true);
         setError(null);
         
-        // Get approved campaigns from backend
-        const response = await apiService.getCampaigns({ 
-          status: 'approved',
-          limit: 50 
-        });
+        // Get user-created campaigns from localStorage
+        const userCreatedCampaigns = JSON.parse(localStorage.getItem('userCreatedCampaigns') || '[]');
         
-        if (response.success) {
-          setCampaigns(response.data.campaigns);
-        } else {
-          throw new Error(response.message || 'Failed to load campaigns');
+        // Try to get approved campaigns from backend
+        try {
+          const response = await apiService.getCampaigns({ 
+            status: 'approved',
+            limit: 50 
+          });
+          
+          if (response.success && response.data.campaigns.length > 0) {
+            // Merge backend campaigns with user-created campaigns
+            const allCampaigns = [...userCreatedCampaigns, ...response.data.campaigns];
+            setCampaigns(allCampaigns);
+          } else {
+            // If no backend campaigns, use dummy campaigns + user-created campaigns
+            const allCampaigns = [...userCreatedCampaigns, ...dummyCampaigns];
+            setCampaigns(allCampaigns);
+          }
+        } catch (backendError) {
+          console.log('Backend not available, using dummy campaigns + user-created campaigns for demo');
+          const allCampaigns = [...userCreatedCampaigns, ...dummyCampaigns];
+          setCampaigns(allCampaigns);
         }
       } catch (err) {
         console.error('Error fetching campaigns:', err);
-        setError('Failed to load campaigns. Please try again.');
+        // Fallback to dummy campaigns only
+        setCampaigns(dummyCampaigns);
       } finally {
         setLoading(false);
       }
     };
 
     fetchCampaigns();
+
+    // Listen for storage changes to refresh campaigns when new ones are added
+    const handleStorageChange = (e) => {
+      if (e.key === 'userCreatedCampaigns') {
+        fetchCampaigns();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Also listen for focus events to refresh when returning to the page
+    const handleFocus = () => {
+      fetchCampaigns();
+    };
+
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, []);
+
+  const handleAuthenticate = async () => {
+    if (!isConnected) {
+      setAdminError('Please connect your wallet first.');
+      return;
+    }
+
+    if (!web3 || !account) {
+      setAdminError('Wallet connection not established. Please try again.');
+      return;
+    }
+
+    setIsAuthenticating(true);
+    setAdminError('');
+
+    try {
+      // Authenticate with wallet - use 'admin' role for admin access
+      await authenticateWithWallet(web3, account, 'admin', {});
+      setAdminError('');
+      // The component will re-render with updated authentication state
+    } catch (error) {
+      console.error('Authentication error:', error);
+      if (error.code === 4001) {
+        setAdminError('Authentication cancelled. Please approve the wallet signature to continue.');
+      } else if (error.message.includes('User rejected')) {
+        setAdminError('Authentication cancelled. Please approve the wallet signature to continue.');
+      } else {
+        setAdminError(`Authentication failed: ${error.message}`);
+      }
+    } finally {
+      setIsAuthenticating(false);
+    }
+  };
+
+  const handleAdminLogin = async () => {
+    // Check if wallet is connected
+    if (!isConnected) {
+      setAdminError('Please connect your wallet first.');
+      return;
+    }
+
+    // Check if user is authenticated
+    if (!isAuthenticated) {
+      setAdminError('Please authenticate with your wallet first.');
+      return;
+    }
+
+    // Check admin credentials
+    if (adminCredentials.id === 'admin' && adminCredentials.password === 'admin123') {
+      setShowAdminModal(false);
+      setAdminCredentials({ id: '', password: '' });
+      setAdminError('');
+      // Navigate to campaign creation form
+      navigate('/admin/create-campaign');
+    } else {
+      setAdminError('Invalid credentials. Please try again.');
+    }
+  };
+
+  const handleEnterCampaign = async () => {
+    // Check if wallet is connected first
+    if (!isConnected) {
+      try {
+        await connectWallet();
+        // After wallet connection, show the modal
+        setShowAdminModal(true);
+        setAdminError('');
+      } catch (error) {
+        setAdminError('Wallet connection required for admin access.');
+      }
+    } else {
+      setShowAdminModal(true);
+      setAdminError('');
+    }
+  };
 
   const filteredCampaigns = campaigns.filter(campaign => {
     const typeMatch = !selectedDisasterType || selectedDisasterType === 'All' || campaign.disasterType === selectedDisasterType;
@@ -162,6 +353,17 @@ const Donate = () => {
                 Clear Filters
               </button>
             )}
+
+            {/* Enter Campaign Button */}
+            <button
+              onClick={handleEnterCampaign}
+              className="px-6 py-3 bg-purple-600 text-white hover:bg-purple-700 rounded-xl transition-colors duration-200 font-medium flex items-center"
+            >
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              Enter a Campaign
+            </button>
           </div>
         </div>
 
@@ -199,12 +401,23 @@ const Donate = () => {
                   
                   {/* Verified Badge */}
                   <div className="absolute top-4 left-4">
-                    <div className="bg-green-500 text-white px-3 py-1 rounded-full text-sm font-medium flex items-center">
-                      <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                      Verified
-                    </div>
+                    {campaign.id.startsWith('camp-') && campaign.id.length > 10 ? (
+                      // User-created campaign (has timestamp in ID)
+                      <div className="bg-purple-500 text-white px-3 py-1 rounded-full text-sm font-medium flex items-center">
+                        <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                        New Campaign
+                      </div>
+                    ) : (
+                      // Demo/backend campaign
+                      <div className="bg-green-500 text-white px-3 py-1 rounded-full text-sm font-medium flex items-center">
+                        <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                        Verified
+                      </div>
+                    )}
                   </div>
 
                   {/* Urgency Badge */}
@@ -347,6 +560,166 @@ const Donate = () => {
           </div>
         </div>
       </div>
+
+      {/* Admin Login Modal */}
+      {showAdminModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">Admin Access Required</h3>
+              <p className="text-gray-600">Wallet authentication + admin credentials required</p>
+            </div>
+
+            {/* Wallet Status */}
+            <div className="mb-4">
+              <div className={`flex items-center p-3 rounded-xl ${
+                isConnected && isAuthenticated 
+                  ? 'bg-green-50 border border-green-200' 
+                  : 'bg-yellow-50 border border-yellow-200'
+              }`}>
+                <div className={`w-3 h-3 rounded-full mr-3 ${
+                  isConnected && isAuthenticated ? 'bg-green-500' : 'bg-yellow-500'
+                }`}></div>
+                <div className="flex-1">
+                  <div className="text-sm font-medium">
+                    {isConnected && isAuthenticated 
+                      ? `✅ Wallet Connected & Authenticated` 
+                      : isConnected 
+                        ? '⚠️ Wallet Connected - Please Authenticate'
+                        : '❌ Wallet Not Connected'
+                    }
+                  </div>
+                  {isAuthenticated && user?.roles && (
+                    <div className="text-xs text-gray-600">
+                      Role: {user.roles.includes('admin') ? '👑 Admin' : `${user.roles[0]} (Admin Required)`}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Authentication Button */}
+            {isConnected && !isAuthenticated && (
+              <div className="mb-4">
+                <button
+                  onClick={handleAuthenticate}
+                  disabled={isAuthenticating}
+                  className="w-full bg-blue-600 text-white px-4 py-3 rounded-xl hover:bg-blue-700 disabled:opacity-50 font-medium transition-colors flex items-center justify-center"
+                >
+                  {isAuthenticating ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Authenticating...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Authenticate with Wallet
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+
+            {/* Connect Wallet Button */}
+            {!isConnected && (
+              <div className="mb-4">
+                <button
+                  onClick={connectWallet}
+                  className="w-full bg-blue-600 text-white px-4 py-3 rounded-xl hover:bg-blue-700 font-medium transition-colors flex items-center justify-center"
+                >
+                  <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                  </svg>
+                  Connect Wallet
+                </button>
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Admin ID</label>
+                <input
+                  type="text"
+                  value={adminCredentials.id}
+                  onChange={(e) => setAdminCredentials(prev => ({ ...prev, id: e.target.value }))}
+                  disabled={!isAuthenticated}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  placeholder="Enter admin ID"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                <input
+                  type="password"
+                  value={adminCredentials.password}
+                  onChange={(e) => setAdminCredentials(prev => ({ ...prev, password: e.target.value }))}
+                  disabled={!isAuthenticated}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  placeholder="Enter password"
+                  onKeyPress={(e) => e.key === 'Enter' && isAuthenticated && handleAdminLogin()}
+                />
+              </div>
+
+              {adminError && (
+                <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+                  <p className="text-red-700 text-sm">{adminError}</p>
+                </div>
+              )}
+
+              {!isAuthenticated && (
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
+                  <p className="text-blue-700 text-sm">
+                    <strong>Step 1:</strong> Connect and authenticate your wallet first<br />
+                    <strong>Step 2:</strong> Enter admin credentials below
+                  </p>
+                </div>
+              )}
+
+              {isAuthenticated && (
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
+                  <p className="text-blue-700 text-sm">
+                    <strong>Demo Credentials:</strong><br />
+                    ID: admin<br />
+                    Password: admin123
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowAdminModal(false);
+                  setAdminCredentials({ id: '', password: '' });
+                  setAdminError('');
+                }}
+                className="flex-1 px-6 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAdminLogin}
+                disabled={!isAuthenticated}
+                className="flex-1 px-6 py-3 bg-purple-600 text-white hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed rounded-xl transition-colors font-medium"
+              >
+                {isAuthenticated ? 'Login' : 'Authenticate First'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

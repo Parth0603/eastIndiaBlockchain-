@@ -18,6 +18,7 @@ import TransparencyDashboard from './pages/TransparencyDashboard';
 import PublicTransparency from './pages/PublicTransparency';
 import TrackFunds from './pages/TrackFunds';
 import About from './pages/About';
+import CreateCampaign from './pages/CreateCampaign';
 
 // Signup Components
 import BeneficiarySignup from './components/signup/BeneficiarySignup';
@@ -35,10 +36,14 @@ import { CurrencyProvider } from './contexts/CurrencyContext';
 // Hooks
 import { useWallet } from './hooks/useWallet';
 import { useAuth } from './hooks/useAuth';
+import { usePageTitle } from './hooks/usePageTitle';
 
 function AppContent() {
   const { isConnected, account } = useWallet();
   const { user, isAuthenticated } = useAuth();
+  
+  // Set dynamic page title based on authentication and role
+  usePageTitle();
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -60,6 +65,7 @@ function AppContent() {
           <Route path="/vendor-dashboard" element={<VendorDashboard />} />
           <Route path="/verifier" element={<VerifierPanel />} />
           <Route path="/admin" element={<AdminPanel />} />
+          <Route path="/admin/create-campaign" element={<CreateCampaign />} />
           <Route path="/transparency" element={<TransparencyDashboard />} />
           <Route path="/public-transparency" element={<PublicTransparency />} />
           <Route path="/track-funds" element={<TrackFunds />} />

@@ -1,12 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { usePageTitle } from '../hooks/usePageTitle';
 import { useCurrency } from '../contexts/CurrencyContext';
 import apiService from '../services/api';
 
 const Landing = () => {
   const { isAuthenticated } = useAuth();
   const { formatCurrency } = useCurrency();
+  
+  // Set page title
+  usePageTitle('Home');
   const [stats, setStats] = useState({
     totalRaised: '0',
     fundsDistributed: '0',
@@ -72,94 +76,210 @@ const Landing = () => {
   };
 
   return (
-    <div className="min-h-screen bg-blue-50">
-      {/* Hero Section */}
-      <div className="relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            {/* Left Content */}
-            <div className="space-y-8">
-              <div className="space-y-4">
-                <h1 className="text-5xl lg:text-6xl font-bold text-gray-900 leading-tight">
+    <div className="min-h-screen">
+      {/* World-Class Hero Section */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-white via-blue-50 to-indigo-100">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 opacity-5">
+          <div className="absolute top-20 left-20 w-72 h-72 bg-blue-600 rounded-full mix-blend-multiply filter blur-xl animate-pulse"></div>
+          <div className="absolute top-40 right-20 w-72 h-72 bg-indigo-600 rounded-full mix-blend-multiply filter blur-xl animate-pulse delay-1000"></div>
+          <div className="absolute bottom-20 left-1/2 w-72 h-72 bg-purple-600 rounded-full mix-blend-multiply filter blur-xl animate-pulse delay-2000"></div>
+        </div>
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-20">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            
+            {/* LEFT COLUMN - Text + Actions */}
+            <div className="space-y-10">
+              {/* Primary Headline */}
+              <div className="space-y-6">
+                <h1 className="text-5xl lg:text-6xl xl:text-7xl font-bold text-gray-900 leading-[1.1] tracking-tight">
                   Transparent Disaster Relief.
-                  <span className="block text-blue-600">Powered by Blockchain.</span>
+                  <span className="block bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                    Powered by Blockchain.
+                  </span>
                 </h1>
-                <p className="text-xl text-gray-600 leading-relaxed max-w-2xl">
-                  Ensuring fast, corruption-free aid distribution. Every donation is 
-                  tracked and delivered directly to those in need, with zero waste.
+                
+                {/* Supporting Subtext */}
+                <p className="text-xl lg:text-2xl text-gray-600 leading-relaxed font-medium max-w-2xl">
+                  Corruption-free aid distribution with end-to-end traceability.
+                  <span className="block mt-2">Direct delivery to verified beneficiaries, zero waste guaranteed.</span>
                 </p>
               </div>
 
-              {/* CTA Buttons */}
+              {/* Trust Indicators */}
+              <div className="flex flex-wrap gap-3">
+                <div className="inline-flex items-center px-4 py-2 bg-white/80 backdrop-blur-sm rounded-full border border-gray-200 shadow-sm">
+                  <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
+                  <span className="text-sm font-semibold text-gray-700">On-chain Verification</span>
+                </div>
+                <div className="inline-flex items-center px-4 py-2 bg-white/80 backdrop-blur-sm rounded-full border border-gray-200 shadow-sm">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+                  <span className="text-sm font-semibold text-gray-700">Smart Contract Enforced</span>
+                </div>
+                <div className="inline-flex items-center px-4 py-2 bg-white/80 backdrop-blur-sm rounded-full border border-gray-200 shadow-sm">
+                  <div className="w-2 h-2 bg-purple-500 rounded-full mr-2"></div>
+                  <span className="text-sm font-semibold text-gray-700">Public Audit Trail</span>
+                </div>
+                <div className="inline-flex items-center px-4 py-2 bg-white/80 backdrop-blur-sm rounded-full border border-gray-200 shadow-sm">
+                  <div className="w-2 h-2 bg-indigo-500 rounded-full mr-2"></div>
+                  <span className="text-sm font-semibold text-gray-700">Stablecoin-based Transfers</span>
+                </div>
+              </div>
+
+              {/* Primary CTA Buttons */}
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link
                   to="/donate"
-                  className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-white bg-blue-500 hover:bg-blue-600 rounded-2xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200"
+                  className="group inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-2xl shadow-xl hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300 border-2 border-blue-600"
                 >
-                  💙 Donate Now
+                  <svg className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
+                  </svg>
+                  Donate Now
                 </Link>
                 <Link
                   to="/signup"
-                  className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-gray-700 bg-white hover:bg-gray-50 rounded-2xl shadow-lg hover:shadow-xl border-2 border-gray-200 transform hover:-translate-y-1 transition-all duration-200"
+                  className="group inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-blue-600 bg-white hover:bg-gray-50 rounded-2xl shadow-xl hover:shadow-2xl border-2 border-blue-600 transform hover:-translate-y-1 transition-all duration-300"
                 >
-                  🏠 Apply for Relief
+                  <svg className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                  </svg>
+                  Apply for Relief
                 </Link>
               </div>
             </div>
 
-            {/* Right Illustration */}
+            {/* RIGHT COLUMN - Visual Storytelling */}
             <div className="relative">
-              <div className="bg-green-100 rounded-3xl p-8 shadow-2xl">
-                {/* Donor to Beneficiary Flow */}
-                <div className="space-y-6">
-                  {/* Donor */}
+              {/* Main Illustration Container */}
+              <div className="relative bg-white/60 backdrop-blur-sm rounded-3xl p-8 shadow-2xl border border-white/20">
+                
+                {/* Security Shield Background */}
+                <div className="absolute top-4 right-4 w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                  <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                </div>
+
+                <div className="space-y-8">
+                  
+                  {/* Step 1: Donor Initiating Transaction */}
                   <div className="flex items-center space-x-4">
-                    <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center shadow-lg">
-                      <span className="text-2xl">👤</span>
-                    </div>
-                    <div>
-                      <div className="text-sm font-medium text-gray-600">Donor</div>
-                      <div className="text-xs text-gray-500">100% Traceable</div>
-                    </div>
-                  </div>
-
-                  {/* Arrow */}
-                  <div className="flex justify-center">
-                    <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md">
-                      <span className="text-blue-600">↓</span>
-                    </div>
-                  </div>
-
-                  {/* Blockchain Verification */}
-                  <div className="bg-white rounded-2xl p-4 shadow-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-700">Blockchain Verification</span>
-                      <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">✓ Verified</span>
-                    </div>
-                    <div className="space-y-1">
-                      <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                        <div className="h-full bg-blue-500 rounded-full animate-pulse"></div>
+                    <div className="relative">
+                      <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
+                        <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
                       </div>
-                      <div className="text-xs text-gray-500">Smart Contract Processing...</div>
+                      <div className="absolute -top-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                        <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-sm font-bold text-gray-900">Verified Donor</div>
+                      <div className="text-xs text-gray-600">Initiates secure donation</div>
+                      <div className="mt-1 flex items-center">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full mr-2 animate-pulse"></div>
+                        <span className="text-xs text-blue-600 font-medium">Wallet Connected</span>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Arrow */}
+                  {/* Flow Arrow with Animation */}
                   <div className="flex justify-center">
-                    <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md">
-                      <span className="text-green-600">↓</span>
+                    <div className="relative">
+                      <svg className="w-8 h-12 text-gray-400 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                      </svg>
                     </div>
                   </div>
 
-                  {/* Beneficiary */}
+                  {/* Step 2: Blockchain Processing */}
+                  <div className="bg-gradient-to-r from-indigo-50 to-blue-50 rounded-2xl p-4 border border-indigo-200">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-sm font-bold text-gray-900">Blockchain Verification</span>
+                      <div className="flex items-center space-x-1">
+                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse delay-100"></div>
+                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse delay-200"></div>
+                      </div>
+                    </div>
+                    
+                    {/* Blockchain Nodes Visualization */}
+                    <div className="grid grid-cols-3 gap-2 mb-3">
+                      {[...Array(6)].map((_, i) => (
+                        <div key={i} className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold text-white ${
+                          i < 4 ? 'bg-green-500' : 'bg-gray-300'
+                        } ${i < 4 ? 'animate-pulse' : ''}`} style={{ animationDelay: `${i * 200}ms` }}>
+                          {i < 4 ? '✓' : '○'}
+                        </div>
+                      ))}
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-xs">
+                        <span className="text-gray-600">Smart Contract Processing</span>
+                        <span className="text-green-600 font-bold">67%</span>
+                      </div>
+                      <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full transition-all duration-1000 animate-pulse" style={{ width: '67%' }}></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Flow Arrow */}
+                  <div className="flex justify-center">
+                    <div className="relative">
+                      <svg className="w-8 h-12 text-gray-400 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                      </svg>
+                    </div>
+                  </div>
+
+                  {/* Step 3: Beneficiary Receiving Aid */}
                   <div className="flex items-center space-x-4">
-                    <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center shadow-lg">
-                      <span className="text-2xl">📦</span>
+                    <div className="relative">
+                      <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg">
+                        <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                        </svg>
+                      </div>
+                      <div className="absolute -top-1 -right-1 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center">
+                        <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </div>
                     </div>
-                    <div>
-                      <div className="text-sm font-medium text-gray-600">Beneficiary</div>
-                      <div className="text-xs text-gray-500">Verified Impact</div>
+                    <div className="flex-1">
+                      <div className="text-sm font-bold text-gray-900">Verified Beneficiary</div>
+                      <div className="text-xs text-gray-600">Receives essential aid package</div>
+                      <div className="mt-1 flex items-center">
+                        <div className="w-2 h-2 bg-emerald-500 rounded-full mr-2 animate-pulse"></div>
+                        <span className="text-xs text-emerald-600 font-medium">Impact Confirmed</span>
+                      </div>
                     </div>
+                  </div>
+                </div>
+
+                {/* Floating Elements for Visual Interest */}
+                <div className="absolute -top-4 -left-4 w-8 h-8 bg-blue-500 rounded-full opacity-20 animate-ping"></div>
+                <div className="absolute -bottom-4 -right-4 w-6 h-6 bg-green-500 rounded-full opacity-30 animate-ping delay-1000"></div>
+              </div>
+
+              {/* Floating Trust Badge */}
+              <div className="absolute -bottom-6 -left-6 bg-white rounded-2xl p-4 shadow-xl border border-gray-100">
+                <div className="flex items-center space-x-2">
+                  <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                    <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-gray-900">100% Verified</div>
+                    <div className="text-xs text-gray-500">Blockchain Secured</div>
                   </div>
                 </div>
               </div>
@@ -167,7 +287,6 @@ const Landing = () => {
           </div>
         </div>
       </div>
-
       {/* Stats Section */}
       <div className="bg-white py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">          

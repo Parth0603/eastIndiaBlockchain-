@@ -1,11 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useWallet } from '../hooks/useWallet';
+import { usePageTitle } from '../hooks/usePageTitle';
 import apiService from '../services/api';
 
 const BeneficiaryDashboard = () => {
   const { isAuthenticated, user } = useAuth();
   const { isConnected, account } = useWallet();
+  
+  // Set page title
+  usePageTitle('Dashboard');
   const [aidBalance, setAidBalance] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedVendor, setSelectedVendor] = useState(null);

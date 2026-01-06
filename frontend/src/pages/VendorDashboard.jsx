@@ -1,11 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useWallet } from '../hooks/useWallet';
+import { usePageTitle } from '../hooks/usePageTitle';
 import apiService from '../services/api';
 
 const VendorDashboard = () => {
   const { isAuthenticated, user } = useAuth();
   const { isConnected, account } = useWallet();
+  
+  // Set page title
+  usePageTitle('Portal');
   const [paymentCode, setPaymentCode] = useState('9876-5432');
   const [vendorProfile, setVendorProfile] = useState(null);
   const [dashboardStats, setDashboardStats] = useState(null);

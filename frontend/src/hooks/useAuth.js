@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 export const useAuth = () => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // Start with loading true
   const [error, setError] = useState(null);
 
   // Check for existing session authentication on mount
@@ -14,11 +14,16 @@ export const useAuth = () => {
         const authData = JSON.parse(savedAuth);
         setUser(authData.user);
         setIsAuthenticated(true);
-        console.log('Restored authentication from session');
+        console.log('Restored authentication from session:', {
+          roles: authData.user?.roles,
+          address: authData.user?.address
+        });
       } catch (error) {
+        console.error('Failed to restore auth from session:', error);
         sessionStorage.removeItem('walletAuth');
       }
     }
+    setIsLoading(false); // Authentication check complete
   }, []);
 
   const signMessage = async (web3, account) => {

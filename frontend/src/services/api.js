@@ -47,9 +47,24 @@ class ApiService {
 
     try {
       const response = await fetch(url, config);
-      const data = await response.json();
+      
+      // Handle different response types
+      let data;
+      const contentType = response.headers.get('content-type');
+      
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        // Handle non-JSON responses (like rate limiting errors)
+        const text = await response.text();
+        data = { message: text, status: response.status };
+      }
 
       if (!response.ok) {
+        // Handle specific error codes
+        if (response.status === 429) {
+          throw new Error('Rate limit exceeded. Please try again in a moment.');
+        }
         throw new Error(data.message || `HTTP error! status: ${response.status}`);
       }
 
@@ -70,9 +85,24 @@ class ApiService {
 
     try {
       const response = await fetch(url, config);
-      const data = await response.json();
+      
+      // Handle different response types
+      let data;
+      const contentType = response.headers.get('content-type');
+      
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        // Handle non-JSON responses (like rate limiting errors)
+        const text = await response.text();
+        data = { message: text, status: response.status };
+      }
 
       if (!response.ok) {
+        // Handle specific error codes
+        if (response.status === 429) {
+          throw new Error('Rate limit exceeded. Please try again in a moment.');
+        }
         throw new Error(data.message || `HTTP error! status: ${response.status}`);
       }
 
@@ -195,9 +225,9 @@ class ApiService {
     return this.get('/donors/impact');
   }
 
-  // Get donor statistics
-  async getDonorStats() {
-    return this.get('/donors/stats');
+  // Get donor transactions (alias for getDonationHistory)
+  async getDonorTransactions(params = {}) {
+    return this.getDonationHistory(params);
   }
 
   // =============================================================================
