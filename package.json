@@ -5,10 +5,10 @@
   "main": "index.js",
   "scripts": {
     "install:all": "npm install && cd frontend && npm install && cd ../backend && npm install && cd ..",
-    "dev": "concurrently \"npm run dev:contracts\" \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "dev:contracts": "npx hardhat node",
-    "dev:backend": "cd backend && npm run dev",
-    "dev:frontend": "cd frontend && npm run dev",
+    "start": "node start.js",
+    "start:simple": "node scripts/start-simple.js",
+    "start:frontend": "node scripts/start-frontend-only.js",
+    "dev": "node start.js",
     "build": "npm run build:contracts && npm run build:backend && npm run build:frontend",
     "build:contracts": "npx hardhat compile",
     "build:backend": "cd backend && npm run build",
@@ -17,13 +17,21 @@
     "test:contracts": "npx hardhat test",
     "test:backend": "cd backend && npm test",
     "test:frontend": "cd frontend && npm test",
+    "test:e2e": "npm run test:integration",
+    "test:integration": "cd test && npm test",
+    "checkpoint": "node scripts/final-checkpoint.js",
+    "quick-check": "node scripts/quick-checkpoint.js",
+    "verify": "node scripts/verify-startup.js",
+    "demo-setup": "npx hardhat run scripts/demo-setup.js --network localhost",
     "deploy:local": "npx hardhat run scripts/deploy.js --network localhost",
+    "deploy:sepolia": "npx hardhat run scripts/deploy-sepolia.js --network sepolia",
     "deploy:testnet": "npx hardhat run scripts/deploy.js --network sepolia",
     "lint": "npm run lint:contracts && npm run lint:backend && npm run lint:frontend",
     "lint:contracts": "npx solhint 'contracts/**/*.sol'",
     "lint:backend": "cd backend && npm run lint",
     "lint:frontend": "cd frontend && npm run lint",
-    "clean": "npx hardhat clean && rm -rf frontend/dist && rm -rf backend/dist"
+    "clean": "npx hardhat clean && rm -rf frontend/dist && rm -rf backend/dist",
+    "seed": "cd backend && npm run seed"
   },
   "keywords": [
     "blockchain",
@@ -48,9 +56,12 @@
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^4.0.0",
     "@openzeppelin/contracts": "^5.0.0",
-    "concurrently": "^8.2.2",
     "hardhat": "^2.19.0",
-    "solhint": "^4.0.0"
+    "jsonwebtoken": "^9.0.3",
+    "mongodb-memory-server": "^11.0.1",
+    "mongoose": "^9.1.1",
+    "solhint": "^4.0.0",
+    "supertest": "^7.1.4"
   },
   "dependencies": {
     "dotenv": "^16.3.1"

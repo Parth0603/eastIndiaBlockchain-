@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-01-03T22:32:27.253Z",
+  "healthScore": 100,
+  "isHealthy": true,
+  "results": {
+    "passed": 10,
+    "failed": 0,
+    "warnings": 0,
+    "total": 10
+  },
+  "featuresComplete": 10,
+  "tasksComplete": 14,
+  "status": "READY"
+}

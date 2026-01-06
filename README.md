@@ -1,312 +1,421 @@
-# 🌍 Blockchain Disaster Relief Distribution System
+# 🌍 Blockchain Disaster Relief System
 
-> Transparent, accountable disaster relief funding using blockchain technology and stablecoins
+A transparent, blockchain-based disaster relief distribution system that ensures accountability and efficient aid delivery to those in need.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
-[![React](https://img.shields.io/badge/React-18+-blue.svg)](https://reactjs.org/)
-[![Solidity](https://img.shields.io/badge/Solidity-0.8+-purple.svg)](https://soliditylang.org/)
+## 🎯 Overview
 
-## 🚀 Problem Statement
+The Blockchain Disaster Relief System is a comprehensive platform that leverages blockchain technology to create a transparent, efficient, and accountable disaster relief distribution network. The system connects donors, beneficiaries, vendors, verifiers, and administrators in a trustless environment where every transaction is recorded on the blockchain.
 
-Traditional disaster relief systems suffer from:
-- **Lack of transparency** in fund distribution
-- **Corruption and mismanagement** of donations
-- **Slow and bureaucratic** distribution processes
-- **No accountability** for fund usage
-- **Limited tracking** of impact and effectiveness
+### Key Features
 
-## 💡 Our Solution
+- **🔗 Blockchain Transparency**: All transactions recorded on Ethereum blockchain
+- **👥 Multi-Role System**: Donors, beneficiaries, vendors, verifiers, and administrators
+- **🔒 Secure Authentication**: Wallet-based authentication with role-based access control
+- **📊 Real-time Monitoring**: Live transaction tracking and impact visualization
+- **🛡️ Fraud Prevention**: Automated fraud detection and reporting system
+- **📱 Responsive UI**: Modern, accessible interface for all user types
+- **⚡ Real-time Updates**: WebSocket-powered live notifications and status updates
 
-A blockchain-based platform that ensures:
-- ✅ **Complete transparency** - All transactions publicly auditable
-- ✅ **Smart contract automation** - Eliminates human error and corruption
-- ✅ **Stablecoin payments** - Fast, borderless, and stable value transfers
-- ✅ **Role-based access** - Secure permissions for all stakeholders
-- ✅ **Spending restrictions** - Funds only used for essential categories
-- ✅ **Real-time tracking** - Live updates on fund distribution and usage
+## 🏗️ Architecture
 
-## 🏗️ Tech Stack
-
-### Frontend
-- **React 18** with **Vite** - Fast, modern UI development
-- **Tailwind CSS** - Utility-first styling framework
-- **MetaMask Integration** - Seamless wallet connectivity
-- **React Router** - Client-side routing
-- **Socket.io Client** - Real-time updates
-
-### Backend
-- **Node.js** with **Express** - RESTful API server
-- **MongoDB** - Document database for off-chain data
-- **Socket.io** - WebSocket real-time communication
-- **JWT Authentication** - Secure user sessions
-- **Web3.js** - Blockchain interaction layer
-
-### Blockchain
-- **Solidity** - Smart contract development
-- **Hardhat** - Development framework and testing
-- **OpenZeppelin** - Security-audited contract libraries
-- **Ethereum Testnet** - Deployment target (Sepolia/Goerli)
-
-## 📁 Project Structure
+### System Components
 
 ```
-blockchain-disaster-relief/
-├── 📂 frontend/                 # React frontend application
-│   ├── 📂 src/
-│   │   ├── 📂 components/      # Reusable UI components
-│   │   │   ├── 📂 common/     # Shared components
-│   │   │   ├── 📂 donor/      # Donor-specific components
-│   │   │   ├── 📂 beneficiary/ # Beneficiary components
-│   │   │   ├── 📂 admin/      # Admin panel components
-│   │   │   └── 📂 public/     # Public dashboard components
-│   │   ├── 📂 pages/          # Page-level components
-│   │   ├── 📂 hooks/          # Custom React hooks
-│   │   ├── 📂 utils/          # Utility functions
-│   │   ├── 📄 App.jsx         # Main app component
-│   │   └── 📄 main.jsx        # Entry point
-│   ├── 📂 public/             # Static assets
-│   └── 📄 package.json
-├── 📂 backend/                  # Node.js backend
-│   ├── 📂 controllers/        # Request handlers
-│   ├── 📂 routes/             # API routes
-│   ├── 📂 services/           # Business logic
-│   ├── 📂 middleware/         # Express middleware
-│   ├── 📂 models/             # Database models
-│   └── 📄 server.js           # Server entry point
-├── 📂 contracts/               # Solidity smart contracts
-│   ├── 📄 ReliefToken.sol     # ERC-20 stablecoin
-│   ├── 📄 ReliefDistribution.sol # Main distribution logic
-│   └── 📄 AccessControl.sol   # Role management
-├── 📂 scripts/                # Deployment scripts
-├── 📂 test/                   # Test files
-├── 📄 hardhat.config.js       # Hardhat configuration
-├── 📄 .gitignore             # Git ignore rules
-└── 📄 README.md              # This file
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Frontend      │    │    Backend      │    │  Smart Contracts│
+│   (React)       │◄──►│   (Node.js)     │◄──►│   (Solidity)    │
+│                 │    │                 │    │                 │
+│ • User Interface│    │ • API Server    │    │ • Access Control│
+│ • Wallet Connect│    │ • Database      │    │ • Relief Token  │
+│ • Real-time UI  │    │ • WebSocket     │    │ • Distribution  │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
-## 🎯 Key Features
+### Technology Stack
 
-### For Donors 💰
-- Connect wallet and donate stablecoins
-- Track donation history and impact
-- Real-time transparency dashboard
-- Verify fund usage on blockchain
+**Frontend:**
+- React 18 with Vite
+- Tailwind CSS for styling
+- MetaMask integration
+- Socket.io client for real-time updates
+- React Router for navigation
+- Recharts for data visualization
 
-### For Beneficiaries 🏠
-- Apply for relief funds with verification
-- Receive allocated funds to wallet
-- Spend only on essential categories
-- View spending history and balance
+**Backend:**
+- Node.js with Express
+- MongoDB for data storage
+- Socket.io for real-time communication
+- JWT authentication
+- Ethers.js for blockchain interaction
+- Multer for file uploads
 
-### For Verifiers 👥
-- Review and approve beneficiary applications
-- Validate vendor legitimacy
-- Monitor transactions for audit
-- Flag suspicious activities
+**Blockchain:**
+- Solidity smart contracts
+- Hardhat development framework
+- OpenZeppelin libraries
+- ERC-20 token standard
+- Role-based access control
 
-### For Admins 🛡️
-- Manage system configuration
-- Add/remove verifiers and vendors
-- Monitor system health and statistics
-- Emergency controls and system pause
-
-### For Vendors 🏪
-- Register and get verified
-- Accept payments from beneficiaries
-- View transaction history
-- Fraud prevention measures
-
-### For Public 🌐
-- View aggregate donation statistics
-- Search and filter transactions
-- Verify blockchain records
-- Export audit reports
-
-## 🔧 Quick Start
+## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js 18+
-- npm or yarn
+
+- Node.js 18+ and npm
+- MongoDB 5.0+
 - MetaMask browser extension
 - Git
 
 ### Installation
 
 1. **Clone the repository**
-```bash
-git clone https://github.com/yourusername/blockchain-disaster-relief.git
-cd blockchain-disaster-relief
-```
+   ```bash
+   git clone https://github.com/your-org/blockchain-disaster-relief.git
+   cd blockchain-disaster-relief
+   ```
 
 2. **Install dependencies**
-```bash
-# Install root dependencies
-npm install
-
-# Install frontend dependencies
-cd frontend && npm install && cd ..
-
-# Install backend dependencies
-cd backend && npm install && cd ..
-```
+   ```bash
+   # Install root dependencies
+   npm install
+   
+   # Install backend dependencies
+   cd backend && npm install && cd ..
+   
+   # Install frontend dependencies
+   cd frontend && npm install && cd ..
+   ```
 
 3. **Set up environment variables**
-```bash
-# Copy environment templates
-cp .env.example .env
-cp frontend/.env.example frontend/.env
-cp backend/.env.example backend/.env
+   ```bash
+   # Copy environment templates
+   cp .env.example .env
+   cp backend/.env.example backend/.env
+   cp frontend/.env.example frontend/.env
+   
+   # Edit the .env files with your configuration
+   ```
 
-# Edit the .env files with your configuration
-```
-
-4. **Start local blockchain**
-```bash
-npx hardhat node
-```
+4. **Start local blockchain (for development)**
+   ```bash
+   npx hardhat node
+   ```
 
 5. **Deploy smart contracts**
+   ```bash
+   npx hardhat run scripts/deploy.js --network localhost
+   npx hardhat run scripts/setup.js --network localhost
+   ```
+
+6. **Start the application**
+   ```bash
+   # Start backend server
+   cd backend && npm run dev &
+   
+   # Start frontend development server
+   cd frontend && npm run dev
+   ```
+
+7. **Access the application**
+   - Frontend: http://localhost:5173
+   - Backend API: http://localhost:3001
+   - API Documentation: http://localhost:3001/api-docs
+
+## 📖 User Guide
+
+### For Donors
+
+1. **Connect Wallet**: Connect your MetaMask wallet
+2. **Make Donation**: Enter amount and optional message
+3. **Track Impact**: View real-time impact of your donations
+4. **View History**: See all your past donations and their outcomes
+
+### For Beneficiaries
+
+1. **Apply for Aid**: Submit application with required documents
+2. **Wait for Approval**: Verifiers review your application
+3. **Receive Allocation**: Get tokens allocated to your wallet
+4. **Spend Funds**: Purchase essentials from approved vendors
+5. **Track Spending**: Monitor your spending history and remaining balance
+
+### For Vendors
+
+1. **Register Business**: Submit vendor application with business documents
+2. **Get Verified**: Wait for verifier approval
+3. **Process Payments**: Accept payments from beneficiaries
+4. **Track Transactions**: View all payment history and analytics
+
+### For Verifiers
+
+1. **Review Applications**: Evaluate beneficiary and vendor applications
+2. **Approve/Reject**: Make decisions based on provided documentation
+3. **Monitor Transactions**: Watch for suspicious activity
+4. **Generate Reports**: Create audit reports and analytics
+
+### For Administrators
+
+1. **System Overview**: Monitor overall system health and statistics
+2. **User Management**: Manage user roles and permissions
+3. **Emergency Controls**: Pause/resume system in emergencies
+4. **Fraud Management**: Handle fraud reports and investigations
+
+## 🔧 Configuration
+
+### Environment Variables
+
+Key environment variables to configure:
+
 ```bash
-npx hardhat run scripts/deploy.js --network localhost
+# Smart Contract Addresses (set after deployment)
+ACCESS_CONTROL_ADDRESS=0x...
+RELIEF_TOKEN_ADDRESS=0x...
+RELIEF_DISTRIBUTION_ADDRESS=0x...
+
+# Database
+MONGODB_URI=mongodb://localhost:27017/disaster-relief
+
+# Security
+JWT_SECRET=your-secure-secret
+PRIVATE_KEY=0x... # For server operations
+
+# Network
+NETWORK=localhost # or sepolia, mainnet
+RPC_URL=http://localhost:8545
 ```
 
-6. **Start the backend server**
-```bash
-cd backend && npm run dev
-```
+### Smart Contract Configuration
 
-7. **Start the frontend application**
-```bash
-cd frontend && npm run dev
-```
+The system uses three main smart contracts:
 
-8. **Open your browser**
-Navigate to `http://localhost:5173` and connect your MetaMask wallet.
+1. **AccessControl**: Manages user roles and permissions
+2. **ReliefToken**: ERC-20 token for aid distribution
+3. **ReliefDistribution**: Main contract handling donations and distributions
 
 ## 🧪 Testing
 
-### Run Smart Contract Tests
-```bash
-npx hardhat test
-```
+### Running Tests
 
-### Run Backend Tests
 ```bash
+# Run all tests
+npm test
+
+# Run backend tests
 cd backend && npm test
-```
 
-### Run Frontend Tests
-```bash
+# Run frontend tests
 cd frontend && npm test
+
+# Run smart contract tests
+npx hardhat test
+
+# Run with coverage
+npm run test:coverage
 ```
 
-### Run All Tests
+### Test Categories
+
+- **Unit Tests**: Individual component/function testing
+- **Integration Tests**: API endpoint and contract interaction testing
+- **Property Tests**: Blockchain property verification using fast-check
+- **End-to-End Tests**: Complete user workflow testing
+
+## 📊 API Documentation
+
+### Authentication
+
+All API endpoints require JWT authentication obtained through wallet signature verification.
+
+```javascript
+// Authentication flow
+POST /api/auth/login
+{
+  "address": "0x...",
+  "signature": "0x...",
+  "message": "Login message"
+}
+```
+
+### Key Endpoints
+
+**Donor Endpoints:**
+- `POST /api/donors/donate` - Process donation
+- `GET /api/donors/history` - Get donation history
+- `GET /api/donors/impact` - Get impact statistics
+
+**Beneficiary Endpoints:**
+- `POST /api/beneficiaries/apply` - Submit application
+- `GET /api/beneficiaries/balance` - Get token balance
+- `POST /api/beneficiaries/spend` - Process spending
+
+**Vendor Endpoints:**
+- `POST /api/vendors/register` - Register as vendor
+- `POST /api/vendors/process-payment` - Process beneficiary payment
+- `GET /api/vendors/transactions` - Get transaction history
+
+**Admin Endpoints:**
+- `GET /api/admin/stats` - System statistics
+- `POST /api/admin/users/:id/role` - Manage user roles
+- `GET /api/admin/audit/logs` - Audit logs
+
+## 🔒 Security
+
+### Security Measures
+
+- **Wallet Authentication**: Cryptographic signature verification
+- **Role-Based Access**: Smart contract enforced permissions
+- **Rate Limiting**: API request throttling
+- **Input Validation**: Comprehensive data validation
+- **Fraud Detection**: Automated suspicious activity detection
+- **Audit Logging**: Complete transaction and action logging
+
+### Security Best Practices
+
+1. **Never share private keys**
+2. **Use hardware wallets for production**
+3. **Regularly update dependencies**
+4. **Monitor for suspicious activity**
+5. **Implement proper backup strategies**
+6. **Use HTTPS in production**
+7. **Regular security audits**
+
+## 🚀 Deployment
+
+### Production Deployment
+
+1. **Prepare Environment**
+   ```bash
+   # Set production environment variables
+   export NODE_ENV=production
+   export MONGODB_URI=mongodb://your-production-db
+   export JWT_SECRET=your-production-secret
+   ```
+
+2. **Deploy Smart Contracts**
+   ```bash
+   # Deploy to testnet (Sepolia)
+   npx hardhat run scripts/deploy.js --network sepolia
+   
+   # Verify contracts
+   npx hardhat run scripts/verify.js --network sepolia
+   ```
+
+3. **Build Applications**
+   ```bash
+   # Build frontend
+   cd frontend && npm run build
+   
+   # Build backend (if needed)
+   cd backend && npm run build
+   ```
+
+4. **Deploy to Cloud**
+   - Frontend: Deploy to Vercel, Netlify, or AWS S3
+   - Backend: Deploy to AWS EC2, Google Cloud, or Heroku
+   - Database: Use MongoDB Atlas or self-hosted MongoDB
+
+### Docker Deployment
+
 ```bash
-npm run test:all
+# Build and run with Docker Compose
+docker-compose up -d
 ```
 
-## 📊 Smart Contract Architecture
+## 📈 Monitoring
 
-### ReliefToken.sol
-- ERC-20 compliant stablecoin
-- Controlled minting for disaster relief
-- Transfer restrictions based on roles
-- Burn functionality for completed distributions
+### System Monitoring
 
-### ReliefDistribution.sol
-- Main business logic contract
-- Beneficiary registration and approval
-- Fund allocation and spending validation
-- Vendor management and payment processing
-- Emergency controls and system pause
+- **Application Metrics**: Response times, error rates, throughput
+- **Blockchain Metrics**: Transaction success rates, gas usage
+- **Business Metrics**: Donation amounts, beneficiary counts, vendor activity
+- **Security Metrics**: Failed authentication attempts, fraud alerts
 
-### AccessControl.sol
-- Role-based permission system
-- Admin, Verifier, Beneficiary, Vendor roles
-- Secure role assignment and revocation
-- Permission enforcement across all functions
+### Logging
 
-## 🔐 Security Features
-
-- **Multi-signature wallets** for admin functions
-- **Role-based access control** for all operations
-- **Spending category restrictions** enforced by smart contracts
-- **Fraud detection algorithms** for suspicious transactions
-- **Emergency pause functionality** for system protection
-- **Audit trails** for all transactions and state changes
-
-## 🌟 Future Roadmap
-
-### Phase 1 (Current)
-- ✅ Core smart contract functionality
-- ✅ Basic frontend interface
-- ✅ Backend API development
-- ✅ MetaMask integration
-
-### Phase 2 (Next 3 months)
-- 🔄 Mobile application development
-- 🔄 Multi-language support
-- 🔄 Advanced analytics dashboard
-- 🔄 Integration with major stablecoin providers
-
-### Phase 3 (6 months)
-- 🔄 Cross-chain compatibility
-- 🔄 AI-powered fraud detection
-- 🔄 Automated disaster response triggers
-- 🔄 Partnership with NGOs and governments
-
-### Phase 4 (1 year)
-- 🔄 Decentralized governance (DAO)
-- 🔄 Insurance integration
-- 🔄 Predictive disaster modeling
-- 🔄 Global disaster relief network
+- **Application Logs**: Server logs with structured logging
+- **Audit Logs**: All user actions and system changes
+- **Transaction Logs**: Blockchain transaction records
+- **Error Logs**: Application errors and exceptions
 
 ## 🤝 Contributing
 
-We welcome contributions from the community! Please read our [Contributing Guidelines](CONTRIBUTING.md) for details on how to submit pull requests, report issues, and suggest improvements.
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
 ### Development Workflow
+
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+2. Create a feature branch
+3. Make your changes
+4. Add tests for new functionality
+5. Ensure all tests pass
+6. Submit a pull request
+
+### Code Standards
+
+- **JavaScript**: ESLint with Airbnb config
+- **Solidity**: Solhint for smart contracts
+- **Testing**: Minimum 80% code coverage
+- **Documentation**: JSDoc for functions and APIs
 
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🏆 Hackathon Submission
+## 🆘 Support
 
-### Team Information
-- **Team Name**: [Your Team Name]
-- **Team Members**: [List team members]
-- **Contact**: [Contact information]
+### Getting Help
 
-### Submission Details
-- **Category**: Blockchain for Social Good
-- **Demo URL**: [Live demo link]
-- **Video Demo**: [Video demonstration link]
-- **Presentation**: [Presentation slides link]
+- **Documentation**: Check this README and inline code comments
+- **Issues**: Create a GitHub issue for bugs or feature requests
+- **Discussions**: Use GitHub Discussions for questions
+- **Email**: Contact us at support@disaster-relief.org
 
-### Technical Achievements
-- ✅ Complete smart contract implementation
-- ✅ Full-stack web application
-- ✅ MetaMask wallet integration
-- ✅ Real-time transaction monitoring
-- ✅ Comprehensive testing suite
-- ✅ Production-ready deployment
+### Common Issues
 
-## 📞 Support & Contact
+**MetaMask Connection Issues:**
+- Ensure MetaMask is installed and unlocked
+- Check that you're on the correct network
+- Clear browser cache and try again
 
-- **Documentation**: [Link to detailed docs]
-- **Discord**: [Community Discord server]
-- **Email**: [Contact email]
-- **Twitter**: [@YourProject](https://twitter.com/yourproject)
+**Transaction Failures:**
+- Check gas fees and wallet balance
+- Ensure contracts are deployed and addresses are correct
+- Verify network connectivity
+
+**API Errors:**
+- Check backend server is running
+- Verify environment variables are set correctly
+- Check database connectivity
+
+## 🗺️ Roadmap
+
+### Phase 1 (Current)
+- ✅ Core system implementation
+- ✅ Basic fraud detection
+- ✅ Real-time notifications
+- ✅ Multi-role dashboard
+
+### Phase 2 (Next)
+- 🔄 Mobile application
+- 🔄 Advanced analytics
+- 🔄 Multi-language support
+- 🔄 Integration with external aid organizations
+
+### Phase 3 (Future)
+- 📋 Cross-chain compatibility
+- 📋 AI-powered fraud detection
+- 📋 Automated compliance reporting
+- 📋 Global disaster response network
+
+## 📊 Statistics
+
+Current system capabilities:
+- **Users**: Unlimited with role-based access
+- **Transactions**: Real-time blockchain processing
+- **Scalability**: Horizontal scaling support
+- **Uptime**: 99.9% target availability
+- **Security**: Multi-layer security implementation
 
 ---
 
-**Built with ❤️ for transparent disaster relief**
+**Built with ❤️ for disaster relief and humanitarian aid**
 
-*Making every donation count, every transaction transparent, and every beneficiary empowered.*
+For more information, visit our [website](https://disaster-relief.org) or contact us at [info@disaster-relief.org](mailto:info@disaster-relief.org).

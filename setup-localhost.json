@@ -1,0 +1,27 @@
+{
+  "network": "localhost",
+  "timestamp": "2026-01-06T11:29:38.557Z",
+  "deployer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  "categories": [
+    "food",
+    "water",
+    "shelter",
+    "medical",
+    "clothing",
+    "education",
+    "transportation",
+    "communication",
+    "other"
+  ],
+  "adminAddresses": [],
+  "verifierAddresses": [],
+  "initialMint": {
+    "amount": "1000000",
+    "recipient": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+  },
+  "verification": {
+    "totalSupply": "0.0",
+    "deployerBalance": "0.0",
+    "deployerIsAdmin": true
+  }
+}
