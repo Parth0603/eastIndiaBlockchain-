@@ -11,6 +11,16 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: true,
+    assetsDir: 'assets',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          router: ['react-router-dom'],
+          web3: ['web3', '@metamask/sdk']
+        }
+      }
+    }
   },
   define: {
     global: 'globalThis',
