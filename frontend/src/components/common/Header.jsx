@@ -4,6 +4,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useWallet } from '../../hooks/useWallet';
 import QuickAuth from './QuickAuth';
 import CurrencyOverlay from './CurrencyOverlay';
+import logoImage from '../../assets/logo.png';
 
 const Header = () => {
   const { isAuthenticated, user, logout, isLoading } = useAuth();
@@ -45,18 +46,24 @@ const Header = () => {
           {/* Logo */}
           <div className="flex items-center flex-shrink-0 min-w-0 flex-1 max-w-md">
             <Link to="/" className="flex items-center space-x-4">
-              <img 
-                src="/logo.png"
-                alt="ReliefChain Logo" 
-                className="w-14 h-14 object-contain"
-                onError={(e) => {
-                  // Fallback to emoji if image fails to load
-                  e.target.style.display = 'none';
-                  e.target.nextSibling.style.display = 'flex';
-                }}
-              />
-              <div className="w-12 h-12 bg-blue-500 rounded-lg items-center justify-center hidden">
-                <span className="text-white font-bold text-lg">⛓️</span>
+              <div className="relative">
+                <img 
+                  src={logoImage}
+                  alt="ReliefChain Logo" 
+                  className="w-14 h-14 object-contain"
+                  onError={(e) => {
+                    // Try public folder path as fallback
+                    e.target.src = '/logo.png';
+                    e.target.onerror = () => {
+                      // Final fallback to emoji
+                      e.target.style.display = 'none';
+                      e.target.nextElementSibling.style.display = 'flex';
+                    };
+                  }}
+                />
+                <div className="w-14 h-14 bg-blue-500 rounded-lg items-center justify-center hidden">
+                  <span className="text-white font-bold text-2xl">⛓️</span>
+                </div>
               </div>
               <div className="flex flex-col">
                 <span className="hidden sm:block text-xl font-bold text-blue-600 leading-tight">

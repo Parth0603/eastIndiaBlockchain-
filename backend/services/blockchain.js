@@ -41,22 +41,48 @@ class BlockchainService {
    */
   async loadContracts() {
     try {
+      // Try to load from artifacts directory
       const contractsDir = path.join(process.cwd(), '../artifacts/contracts');
       
-      // Load AccessControl contract
-      const accessControlABI = JSON.parse(
-        fs.readFileSync(path.join(contractsDir, 'AccessControl.sol/DisasterReliefAccessControl.json'), 'utf8')
-      ).abi;
+      let accessControlABI, reliefTokenABI, reliefDistributionABI;
       
-      // Load ReliefToken contract
-      const reliefTokenABI = JSON.parse(
-        fs.readFileSync(path.join(contractsDir, 'ReliefToken.sol/ReliefToken.json'), 'utf8')
-      ).abi;
-      
-      // Load ReliefDistribution contract
-      const reliefDistributionABI = JSON.parse(
-        fs.readFileSync(path.join(contractsDir, 'ReliefDistribution.sol/ReliefDistribution.json'), 'utf8')
-      ).abi;
+      try {
+        // Load AccessControl contract
+        accessControlABI = JSON.parse(
+          fs.readFileSync(path.join(contractsDir, 'AccessControl.sol/DisasterReliefAccessControl.json'), 'utf8')
+        ).abi;
+        
+        // Load ReliefToken contract
+        reliefTokenABI = JSON.parse(
+          fs.readFileSync(path.join(contractsDir, 'ReliefToken.sol/ReliefToken.json'), 'utf8')
+        ).abi;
+        
+        // Load ReliefDistribution contract
+        reliefDistributionABI = JSON.parse(
+          fs.readFileSync(path.join(contractsDir, 'ReliefDistribution.sol/ReliefDistribution.json'), 'utf8')
+        ).abi;
+      } catch (fileError) {
+        console.log('⚠️ Contract artifacts not found, using minimal ABIs for production');
+        
+        // Minimal ABIs for production (basic functionality)
+        accessControlABI = [
+          "function hasRole(bytes32 role, address account) view returns (bool)",
+          "function grantRole(bytes32 role, address account)",
+          "function revokeRole(bytes32 role, address account)"
+        ];
+        
+        reliefTokenABI = [
+          "function balanceOf(address account) view returns (uint256)",
+          "function transfer(address to, uint256 amount) returns (bool)",
+          "function mint(address to, uint256 amount)"
+        ];
+        
+        reliefDistributionABI = [
+          "function donate(uint256 amount)",
+          "function distributeToVendor(address vendor, uint256 amount)",
+          "function getTotalDonations() view returns (uint256)"
+        ];
+      }
 
       // Create contract instances
       this.contracts.accessControl = new ethers.Contract(

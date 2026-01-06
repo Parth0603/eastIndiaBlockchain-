@@ -100,6 +100,24 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Root route for health check
+app.get('/', (req, res) => {
+  res.json({
+    message: 'ReliefChain Backend API',
+    status: 'running',
+    version: '1.0.0',
+    endpoints: {
+      auth: '/api/auth',
+      donors: '/api/donors',
+      beneficiaries: '/api/beneficiaries',
+      vendors: '/api/vendors',
+      admin: '/api/admin',
+      public: '/api/public',
+      fraud: '/api/fraud'
+    }
+  });
+});
+
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/donors', donorRoutes);
