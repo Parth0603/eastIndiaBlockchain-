@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import Web3 from 'web3';
+import { useMetaMaskDetection } from './useMetaMaskDetection';
 
 export const useWallet = () => {
   const [isConnected, setIsConnected] = useState(false);
@@ -324,6 +325,9 @@ export const useWallet = () => {
     }
   };
 
+  // Use MetaMask detection hook
+  const { isMetaMaskInstalled, isChecking } = useMetaMaskDetection();
+
   return {
     isConnected,
     account,
@@ -338,5 +342,7 @@ export const useWallet = () => {
     switchToSepolia,
     switchToLocalhost,
     isMetaMaskAvailable: isMetaMaskAvailable(),
+    isMetaMaskInstalled,
+    isCheckingMetaMask: isChecking,
   };
 };

@@ -295,7 +295,7 @@ router.get('/balance',
 
 /**
  * @route   POST /api/beneficiaries/spend
- * @desc    Process spending transaction
+ * @desc    Process spending transaction (including QR code payments)
  * @access  Private (Beneficiary only)
  */
 router.post('/spend',
@@ -305,9 +305,56 @@ router.post('/spend',
   handleValidationErrors,
   async (req, res) => {
     try {
-      const { vendor, amount, category, description, receiptHash } = req.body;
+      const { vendor, vendorId, paymentCode, amount, category, description, receiptHash } = req.body;
       const beneficiaryAddress = req.user.address;
       const io = req.app.get('io');
+
+      // Handle both regular spending and QR code payments
+      let vendorAddress = vendor;
+      let vendorName = 'Unknown Vendor';
+
+      // If this is a QR code payment, find vendor by vendorId
+      if (vendorId && paymentCode) {
+        const vendorUser = await User.findOne({ 
+          $or: [
+            { 'profile.vendorId': vendorId },
+            { address: vendorId.toLowerCase() }
+          ],
+          role: 'vendor',
+          'profile.verificationStatus': 'verified'
+        });
+
+        if (!vendorUser) {
+          return res.status(400).json({
+            success: false,
+            message: 'Vendor not found or not verified'
+          });
+        }
+
+        vendorAddress = vendorUser.address;
+        vendorName = vendorUser.profile?.businessName || vendorUser.profile?.name || 'Unknown Vendor';
+      } else if (vendor) {
+        // Regular spending - validate vendor address
+        const vendorUser = await User.findOne({ 
+          address: vendor.toLowerCase(),
+          role: 'vendor',
+          'profile.verificationStatus': 'verified'
+        });
+
+        if (!vendorUser) {
+          return res.status(400).json({
+            success: false,
+            message: 'Vendor not found or not verified'
+          });
+        }
+
+        vendorName = vendorUser.profile?.businessName || vendorUser.profile?.name || 'Unknown Vendor';
+      } else {
+        return res.status(400).json({
+          success: false,
+          message: 'Vendor information is required'
+        });
+      }
 
       // Get beneficiary balance and allocation
       const tokenBalance = parseFloat(await blockchainService.getTokenBalance(beneficiaryAddress));
@@ -316,52 +363,44 @@ router.post('/spend',
       // Validate spending
       businessRules.validateSpending(parseFloat(amount), category, tokenBalance);
 
-      // Check if vendor is approved (in a real system, this would check the smart contract)
-      // For now, we'll assume the vendor exists in our database
-      const vendorUser = await User.findOne({ 
-        address: vendor.toLowerCase(),
-        role: 'vendor',
-        'profile.verificationStatus': 'verified'
-      });
-
-      if (!vendorUser) {
-        return res.status(400).json({
-          success: false,
-          message: 'Vendor not found or not verified'
-        });
-      }
-
       // Create spending transaction record
       const transaction = new Transaction({
         type: 'spending',
         from: beneficiaryAddress,
-        to: vendor.toLowerCase(),
+        to: vendorAddress.toLowerCase(),
         amount: (parseFloat(amount) * Math.pow(10, 18)).toString(), // Convert to wei
         txHash: '0x' + Math.random().toString(16).substr(2, 64), // Mock transaction hash
-        status: 'pending',
+        status: 'confirmed', // QR code payments are instantly confirmed
         category,
         metadata: {
           description,
           category,
           beneficiaryName: req.user.name || 'Unknown',
-          vendorName: vendorUser.profile?.name || 'Unknown Vendor',
-          receiptHash: receiptHash || null
+          vendorName,
+          receiptHash: receiptHash || null,
+          paymentMethod: paymentCode ? 'qr_code' : 'manual',
+          paymentCode: paymentCode || null,
+          vendorId: vendorId || null
         }
       });
 
       await transaction.save();
 
       // Update vendor's total received (mock - in real system this would be handled by smart contract)
-      vendorUser.totalReceived = (parseFloat(vendorUser.totalReceived || 0) + parseFloat(amount)).toString();
-      await vendorUser.save();
+      const vendorUser = await User.findOne({ address: vendorAddress.toLowerCase() });
+      if (vendorUser) {
+        vendorUser.totalReceived = (parseFloat(vendorUser.totalReceived || 0) + parseFloat(amount)).toString();
+        await vendorUser.save();
+      }
 
       // Emit real-time update
       io.emit('spending-processed', {
         beneficiary: beneficiaryAddress,
-        vendor: vendor.toLowerCase(),
+        vendor: vendorAddress.toLowerCase(),
         amount,
         category,
         transactionHash: transaction.txHash,
+        paymentMethod: paymentCode ? 'qr_code' : 'manual',
         timestamp: new Date()
       });
 
@@ -372,9 +411,11 @@ router.post('/spend',
           transactionHash: transaction.txHash,
           amount,
           category,
-          vendor: vendor.toLowerCase(),
-          status: 'pending',
-          message: 'Spending transaction processed successfully'
+          vendor: vendorAddress.toLowerCase(),
+          vendorName,
+          status: 'confirmed',
+          paymentMethod: paymentCode ? 'qr_code' : 'manual',
+          message: paymentCode ? 'QR code payment processed successfully' : 'Spending transaction processed successfully'
         }
       });
 
@@ -473,7 +514,7 @@ router.get('/transactions',
 
 /**
  * @route   GET /api/beneficiaries/vendors
- * @desc    Get list of approved vendors
+ * @desc    Get list of approved vendors with location and rating info
  * @access  Private (Beneficiary only)
  */
 router.get('/vendors',
@@ -481,7 +522,7 @@ router.get('/vendors',
   requireBeneficiary,
   async (req, res) => {
     try {
-      const { category } = req.query;
+      const { category, location } = req.query;
 
       // Build query for approved vendors
       const query = {
@@ -491,29 +532,52 @@ router.get('/vendors',
       };
 
       const vendors = await User.find(query)
-        .select('address profile.name profile.email createdAt')
+        .select('address profile totalReceived createdAt')
         .lean();
 
-      // Filter by category if specified (in a real system, this would check smart contract)
-      let filteredVendors = vendors;
+      // Transform vendor data for frontend
+      const transformedVendors = vendors.map(vendor => {
+        const businessName = vendor.profile?.businessName || vendor.profile?.name || 'Unknown Business';
+        const businessType = vendor.profile?.businessType || 'general';
+        const city = vendor.profile?.city || 'Unknown Location';
+        
+        // Generate mock data for demo purposes
+        const mockRating = 4.2 + (Math.random() * 0.8); // 4.2 - 5.0
+        const mockDistance = (Math.random() * 5 + 0.5).toFixed(1); // 0.5 - 5.5 km
+        
+        return {
+          id: `VEN-${vendor.address.slice(-6).toUpperCase()}`,
+          address: vendor.address,
+          name: businessName,
+          type: formatBusinessType(businessType),
+          category: businessType,
+          location: city,
+          distance: `${mockDistance} km`,
+          rating: parseFloat(mockRating.toFixed(1)),
+          verified: true,
+          totalReceived: vendor.totalReceived || '0',
+          registeredAt: vendor.createdAt
+        };
+      });
+
+      // Filter by category if specified
+      let filteredVendors = transformedVendors;
       if (category) {
-        // For now, we'll return all vendors as we don't have category mapping in User model
-        // In a real system, this would query the smart contract for vendor categories
+        filteredVendors = transformedVendors.filter(vendor => 
+          vendor.category.toLowerCase().includes(category.toLowerCase())
+        );
       }
+
+      // Sort by distance (closest first)
+      filteredVendors.sort((a, b) => parseFloat(a.distance) - parseFloat(b.distance));
 
       res.json({
         success: true,
         data: {
-          vendors: filteredVendors.map(vendor => ({
-            address: vendor.address,
-            name: vendor.profile?.name || 'Unknown Vendor',
-            email: vendor.profile?.email,
-            registeredAt: vendor.createdAt,
-            // In real system, would get categories from smart contract
-            categories: ['food', 'medicine', 'shelter'] // Mock categories
-          })),
+          vendors: filteredVendors,
           totalCount: filteredVendors.length,
-          category: category || 'all'
+          category: category || 'all',
+          location: location || 'current'
         }
       });
 
@@ -526,6 +590,20 @@ router.get('/vendors',
     }
   }
 );
+
+// Helper function to format business type for display
+function formatBusinessType(businessType) {
+  const typeMap = {
+    'retail': 'Retail Store',
+    'pharmacy': 'Pharmacy',
+    'grocery': 'Grocery Store', 
+    'hardware': 'Hardware Store',
+    'medical': 'Medical Services',
+    'restaurant': 'Restaurant/Food Service',
+    'other': 'Other'
+  };
+  return typeMap[businessType] || businessType || 'General';
+}
 
 /**
  * @route   PUT /api/beneficiaries/profile

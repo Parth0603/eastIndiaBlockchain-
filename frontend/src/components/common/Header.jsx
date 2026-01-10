@@ -4,13 +4,26 @@ import { useAuth } from '../../hooks/useAuth';
 import { useWallet } from '../../hooks/useWallet';
 import QuickAuth from './QuickAuth';
 import CurrencyOverlay from './CurrencyOverlay';
+import MetaMaskInstallModal from '../wallet/MetaMaskInstallModal';
 import logoImage from '../../assets/logo.png';
 
 const Header = () => {
   const { isAuthenticated, user, logout, isLoading } = useAuth();
-  const { isConnected, account, connectWallet, disconnectWallet } = useWallet();
+  const { isConnected, account, connectWallet, disconnectWallet, isMetaMaskInstalled, isCheckingMetaMask } = useWallet();
   const [showQuickAuth, setShowQuickAuth] = useState(false);
+  const [showInstallModal, setShowInstallModal] = useState(false);
   const navigate = useNavigate();
+
+  const handleConnectWallet = async () => {
+    // Check if MetaMask is installed first
+    if (!isMetaMaskInstalled && !isCheckingMetaMask) {
+      setShowInstallModal(true);
+      return;
+    }
+    
+    // If MetaMask is installed, proceed with connection
+    await connectWallet();
+  };
 
   const handleSignOut = () => {
     try {
@@ -46,24 +59,18 @@ const Header = () => {
           {/* Logo */}
           <div className="flex items-center flex-shrink-0 min-w-0 flex-1 max-w-md">
             <Link to="/" className="flex items-center space-x-4">
-              <div className="relative">
-                <img 
-                  src={logoImage}
-                  alt="ReliefChain Logo" 
-                  className="w-14 h-14 object-contain"
-                  onError={(e) => {
-                    // Try public folder path as fallback
-                    e.target.src = '/logo.png';
-                    e.target.onerror = () => {
-                      // Final fallback to emoji
-                      e.target.style.display = 'none';
-                      e.target.nextElementSibling.style.display = 'flex';
-                    };
-                  }}
-                />
-                <div className="w-14 h-14 bg-blue-500 rounded-lg items-center justify-center hidden">
-                  <span className="text-white font-bold text-2xl">⛓️</span>
-                </div>
+              <img 
+                src="/logo.png"
+                alt="ReliefChain Logo" 
+                className="w-14 h-14 object-contain"
+                onError={(e) => {
+                  // Fallback to emoji if image fails to load
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'flex';
+                }}
+              />
+              <div className="w-12 h-12 bg-blue-500 rounded-lg items-center justify-center hidden">
+                <span className="text-white font-bold text-lg">⛓️</span>
               </div>
               <div className="flex flex-col">
                 <span className="hidden sm:block text-xl font-bold text-blue-600 leading-tight">
@@ -114,13 +121,30 @@ const Header = () => {
             {/* Wallet Connection/Disconnection */}
             {!isConnected ? (
               <button
-                onClick={connectWallet}
-                className="inline-flex items-center px-3 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200 whitespace-nowrap"
+                onClick={handleConnectWallet}
+                disabled={isCheckingMetaMask}
+                className="inline-flex items-center px-3 py-2 text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium rounded-lg transition-colors duration-200 whitespace-nowrap"
               >
-                <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
-                </svg>
-                Connect Wallet
+                {isCheckingMetaMask ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Checking...
+                  </>
+                ) : !isMetaMaskInstalled ? (
+                  <>
+                    <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                    Install MetaMask
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                    </svg>
+                    Connect Wallet
+                  </>
+                )}
               </button>
             ) : (
               <div className="flex items-center space-x-2">
@@ -264,6 +288,17 @@ const Header = () => {
             window.location.reload(); // Refresh to update dashboard access
           }}
           onCancel={() => setShowQuickAuth(false)}
+        />
+      )}
+      {/* MetaMask Install Modal */}
+      {showInstallModal && (
+        <MetaMaskInstallModal
+          isOpen={showInstallModal}
+          onClose={() => setShowInstallModal(false)}
+          onInstalled={() => {
+            setShowInstallModal(false);
+            window.location.reload();
+          }}
         />
       )}
     </header>

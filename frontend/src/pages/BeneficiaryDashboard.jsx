@@ -3,6 +3,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useWallet } from '../hooks/useWallet';
 import { usePageTitle } from '../hooks/usePageTitle';
 import apiService from '../services/api';
+import QRCodeScanner from '../components/beneficiary/QRCodeScanner';
 
 const BeneficiaryDashboard = () => {
   const { isAuthenticated, user } = useAuth();
@@ -14,6 +15,11 @@ const BeneficiaryDashboard = () => {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedVendor, setSelectedVendor] = useState(null);
   const [showSpendingModal, setShowSpendingModal] = useState(false);
+  const [showQRScanner, setShowQRScanner] = useState(false);
+  const [scannedPaymentData, setScannedPaymentData] = useState(null);
+  const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentDescription, setPaymentDescription] = useState('');
+  const [processingPayment, setProcessingPayment] = useState(false);
   const [aidCategories, setAidCategories] = useState([]);
   const [nearbyVendors, setNearbyVendors] = useState([]);
   const [recentTransactions, setRecentTransactions] = useState([]);
@@ -147,6 +153,89 @@ const BeneficiaryDashboard = () => {
     setShowSpendingModal(true);
   };
 
+  const handleQRScan = () => {
+    setShowQRScanner(true);
+    setScannedPaymentData(null);
+  };
+
+  const handleQRScanSuccess = (qrData) => {
+    console.log('QR Code scanned successfully:', qrData);
+    setScannedPaymentData(qrData);
+    setShowQRScanner(false);
+    
+    // Find vendor from nearby vendors list
+    const vendor = nearbyVendors.find(v => v.id === qrData.vendorId);
+    if (vendor) {
+      setSelectedVendor(vendor);
+    }
+    
+    // Show payment modal
+    setShowSpendingModal(true);
+  };
+
+  const handleQRScanError = (error) => {
+    console.error('QR scan error:', error);
+    alert(error);
+  };
+
+  const processPayment = async () => {
+    if (!scannedPaymentData || !paymentAmount || !paymentDescription) {
+      alert('Please fill in all payment details');
+      return;
+    }
+
+    setProcessingPayment(true);
+    
+    try {
+      // Process the payment through the backend
+      const paymentData = {
+        vendorId: scannedPaymentData.vendorId,
+        paymentCode: scannedPaymentData.paymentCode,
+        amount: parseFloat(paymentAmount),
+        description: paymentDescription,
+        category: selectedCategory?.name || 'General',
+        timestamp: Date.now()
+      };
+
+      const response = await apiService.processSpending(paymentData);
+      
+      if (response.success) {
+        // Update local state
+        setAidBalance(prev => prev - parseFloat(paymentAmount));
+        
+        // Add to recent transactions
+        const newTransaction = {
+          id: response.data.transactionId || `txn-${Date.now()}`,
+          vendor: selectedVendor?.name || 'Unknown Vendor',
+          items: paymentDescription,
+          amount: parseFloat(paymentAmount),
+          category: selectedCategory?.name || 'General',
+          date: 'Just now',
+          status: 'confirmed'
+        };
+        
+        setRecentTransactions(prev => [newTransaction, ...prev.slice(0, 9)]);
+        
+        // Reset form
+        setScannedPaymentData(null);
+        setPaymentAmount('');
+        setPaymentDescription('');
+        setSelectedVendor(null);
+        setSelectedCategory(null);
+        setShowSpendingModal(false);
+        
+        alert('Payment processed successfully!');
+      } else {
+        throw new Error(response.message || 'Payment failed');
+      }
+    } catch (error) {
+      console.error('Payment processing error:', error);
+      alert(`Payment failed: ${error.message}`);
+    } finally {
+      setProcessingPayment(false);
+    }
+  };
+
   const handleCategorySelect = (category) => {
     setSelectedCategory(category);
     setSelectedVendor(null);
@@ -253,12 +342,20 @@ const BeneficiaryDashboard = () => {
 
         {/* Spend Aid Button */}
         <div className="mb-8">
-          <button
-            onClick={handleSpendAid}
-            className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-4 px-6 rounded-3xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-1 flex items-center justify-center text-lg"
-          >
-            🛒 Spend Aid Now
-          </button>
+          <div className="grid md:grid-cols-2 gap-4">
+            <button
+              onClick={handleSpendAid}
+              className="bg-green-500 hover:bg-green-600 text-white font-semibold py-4 px-6 rounded-3xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-1 flex items-center justify-center text-lg"
+            >
+              🛒 Spend Aid Now
+            </button>
+            <button
+              onClick={handleQRScan}
+              className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-4 px-6 rounded-3xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-1 flex items-center justify-center text-lg"
+            >
+              📱 Scan QR Code
+            </button>
+          </div>
         </div>
         
         {/* Allowed Spending Categories */}
@@ -425,6 +522,171 @@ const BeneficiaryDashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* QR Scanner Modal */}
+      {showQRScanner && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-gray-900">Scan Vendor QR Code</h3>
+              <button
+                onClick={() => setShowQRScanner(false)}
+                className="text-gray-400 hover:text-gray-600 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+            
+            <QRCodeScanner
+              isActive={showQRScanner}
+              onScanSuccess={handleQRScanSuccess}
+              onScanError={handleQRScanError}
+            />
+            
+            <div className="mt-6 text-center">
+              <button
+                onClick={() => setShowQRScanner(false)}
+                className="bg-gray-500 text-white px-6 py-2 rounded-xl hover:bg-gray-600 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Payment Processing Modal */}
+      {showSpendingModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-gray-900">
+                {scannedPaymentData ? 'Process Payment' : 'Spend Aid'}
+              </h3>
+              <button
+                onClick={() => {
+                  setShowSpendingModal(false);
+                  setScannedPaymentData(null);
+                  setPaymentAmount('');
+                  setPaymentDescription('');
+                }}
+                className="text-gray-400 hover:text-gray-600 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+
+            {scannedPaymentData && (
+              <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-2xl">
+                <div className="flex items-center mb-2">
+                  <span className="text-green-600 text-xl mr-2">✅</span>
+                  <span className="font-semibold text-green-800">QR Code Scanned</span>
+                </div>
+                <div className="text-sm text-green-700">
+                  <div>Vendor ID: {scannedPaymentData.vendorId}</div>
+                  <div>Payment Code: {scannedPaymentData.paymentCode}</div>
+                  {selectedVendor && (
+                    <div className="mt-2 font-medium">
+                      Vendor: {selectedVendor.name}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-4">
+              {/* Category Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Category
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {aidCategories.map((category) => (
+                    <button
+                      key={category.id}
+                      onClick={() => setSelectedCategory(category)}
+                      className={`p-3 rounded-xl border text-center transition-colors ${
+                        selectedCategory?.id === category.id
+                          ? 'border-blue-500 bg-blue-50 text-blue-700'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="text-xl mb-1">{category.icon}</div>
+                      <div className="text-xs font-medium">{category.name}</div>
+                      <div className="text-xs text-gray-500">{category.units} units</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Amount Input */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Amount (Aid Units)
+                </label>
+                <input
+                  type="number"
+                  value={paymentAmount}
+                  onChange={(e) => setPaymentAmount(e.target.value)}
+                  placeholder="Enter amount"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  min="1"
+                  max={selectedCategory?.units || aidBalance}
+                />
+                {selectedCategory && (
+                  <div className="text-xs text-gray-500 mt-1">
+                    Available in {selectedCategory.name}: {selectedCategory.units} units
+                  </div>
+                )}
+              </div>
+
+              {/* Description Input */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Description
+                </label>
+                <input
+                  type="text"
+                  value={paymentDescription}
+                  onChange={(e) => setPaymentDescription(e.target.value)}
+                  placeholder="What are you purchasing?"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={() => {
+                    setShowSpendingModal(false);
+                    setScannedPaymentData(null);
+                    setPaymentAmount('');
+                    setPaymentDescription('');
+                  }}
+                  className="flex-1 bg-gray-500 text-white py-3 px-4 rounded-xl hover:bg-gray-600 transition-colors"
+                  disabled={processingPayment}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={processPayment}
+                  disabled={processingPayment || !paymentAmount || !paymentDescription || !selectedCategory}
+                  className="flex-1 bg-green-500 text-white py-3 px-4 rounded-xl hover:bg-green-600 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center"
+                >
+                  {processingPayment ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Processing...
+                    </>
+                  ) : (
+                    scannedPaymentData ? 'Pay Vendor' : 'Spend Aid'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
