@@ -13,6 +13,7 @@ const DonationDetails = () => {
   const { account, connectWallet, isConnected } = useWallet();
   const [event, setEvent] = useState(null);
   const [donationAmount, setDonationAmount] = useState('');
+  const [donationCategory, setDonationCategory] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [donorMessage, setDonorMessage] = useState('');
@@ -83,11 +84,17 @@ const DonationDetails = () => {
       return;
     }
 
+    if (!donationCategory) {
+      toast.error('Please select a donation category');
+      return;
+    }
+
     setIsProcessing(true);
     try {
       // Process donation through API
       const donationData = {
         amount: donationAmount,
+        category: donationCategory,
         donor: account,
         campaignId: eventId,
         message: donorMessage
@@ -96,8 +103,9 @@ const DonationDetails = () => {
       const response = await apiService.processDonation(donationData);
       
       if (response.success) {
-        toast.success(`Thank you for donating $${parseFloat(donationAmount).toFixed(2)} to ${event.title}!`);
+        toast.success(`Thank you for donating $${parseFloat(donationAmount).toFixed(2)} for ${donationCategory} aid to ${event.title}!`);
         setDonationAmount('');
+        setDonationCategory('');
         setDonorMessage('');
         
         // Refresh campaign data to show updated raised amount
@@ -319,6 +327,29 @@ const DonationDetails = () => {
 
                   <div>
                     <label className="block text-sm font-bold text-gray-900 mb-3">
+                      🏷️ Aid Category
+                    </label>
+                    <select
+                      value={donationCategory}
+                      onChange={(e) => setDonationCategory(e.target.value)}
+                      className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg font-medium bg-white"
+                      disabled={!isConnected || !isAuthenticated}
+                    >
+                      <option value="">Select aid category...</option>
+                      <option value="Food">🍽️ Food & Nutrition</option>
+                      <option value="Medical">💊 Medical & Healthcare</option>
+                      <option value="Shelter">🏠 Shelter & Housing</option>
+                      <option value="Water">💧 Water & Sanitation</option>
+                      <option value="Clothing">👕 Clothing & Essentials</option>
+                      <option value="Emergency Supplies">🆘 Emergency Supplies</option>
+                    </select>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Your donation will be restricted to this category to ensure proper aid distribution
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-bold text-gray-900 mb-3">
                       💬 Message (Optional)
                     </label>
                     <textarea
@@ -333,7 +364,7 @@ const DonationDetails = () => {
 
                   <button
                     onClick={handleDonate}
-                    disabled={isProcessing || !donationAmount || !isConnected || !isAuthenticated}
+                    disabled={isProcessing || !donationAmount || !donationCategory || !isConnected || !isAuthenticated}
                     className="w-full px-6 py-4 bg-green-600 hover:bg-green-700 text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed font-bold text-lg shadow-lg transition-all duration-200 transform hover:scale-105 disabled:hover:scale-100"
                   >
                     {isProcessing ? (
@@ -344,7 +375,7 @@ const DonationDetails = () => {
                     ) : (
                       <div className="flex items-center justify-center">
                         <span className="mr-2">💝</span>
-                        Donate {donationAmount ? `$${parseFloat(donationAmount).toFixed(2)}` : ''}
+                        Donate {donationAmount ? `$${parseFloat(donationAmount).toFixed(2)}` : ''} {donationCategory ? `for ${donationCategory}` : ''}
                       </div>
                     )}
                   </button>

@@ -167,6 +167,12 @@ class ApiService {
     return this.publicGet('/public/fund-flow');
   }
 
+  // Get category-specific statistics
+  async getCategoryStats(category = null) {
+    const params = category ? { category } : {};
+    return this.publicGet('/public/category-stats', params);
+  }
+
   // Search transactions
   async searchTransactions(params = {}) {
     return this.publicGet('/public/search', params);
@@ -288,6 +294,11 @@ class ApiService {
     return this.get('/beneficiaries/vendors', params);
   }
 
+  // Get category limits for beneficiary
+  async getCategoryLimits() {
+    return this.get('/beneficiaries/category-limits');
+  }
+
   // Update beneficiary profile
   async updateBeneficiaryProfile(profileData) {
     return this.put('/beneficiaries/profile', profileData);
@@ -375,6 +386,65 @@ class ApiService {
     return this.get('/admin/stats');
   }
 
+  // Get category limits (admin)
+  async getAdminCategoryLimits() {
+    return this.get('/admin/categories/limits');
+  }
+
+  // Update category limits (admin)
+  async updateCategoryLimits(category, limitsData) {
+    return this.put(`/admin/categories/limits/${category}`, limitsData);
+  }
+
+  // Set emergency override for category (admin)
+  async setCategoryEmergencyOverride(category, overrideData) {
+    return this.post(`/admin/categories/limits/${category}/emergency-override`, overrideData);
+  }
+
+  // Get category usage statistics (admin)
+  async getCategoryUsage(timeframe = 'daily') {
+    return this.get('/admin/categories/usage', { timeframe });
+  }
+
+  // Get detailed category analytics (admin)
+  async getCategoryAnalytics(period = '30', category = null) {
+    const params = { period };
+    if (category) params.category = category;
+    return this.get('/admin/categories/analytics', params);
+  }
+
+  // Generate category impact report (admin)
+  async getCategoryImpactReport(startDate = null, endDate = null, category = null) {
+    const params = {};
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    if (category) params.category = category;
+    return this.get('/admin/categories/impact-report', params);
+  }
+
+  // Get category fraud analysis (admin)
+  async getCategoryFraudAnalysis(timeframe = '30', category = null) {
+    const params = { timeframe };
+    if (category) params.category = category;
+    return this.get('/admin/fraud/category-analysis', params);
+  }
+
+  // Get fraud alerts (admin)
+  async getFraudAlerts(severity = null, category = null, limit = 50) {
+    const params = { limit };
+    if (severity) params.severity = severity;
+    if (category) params.category = category;
+    return this.get('/admin/fraud/alerts', params);
+  }
+
+  // Review fraud alert (admin)
+  async reviewFraudAlert(transactionId, decision, notes = '') {
+    return this.post(`/admin/fraud/review/${transactionId}`, {
+      decision,
+      notes
+    });
+  }
+
   // Get users for management
   async getUsers(params = {}) {
     return this.get('/admin/users', params);
@@ -417,6 +487,22 @@ class ApiService {
   // Approve/reject vendor
   async reviewVendor(vendorId, reviewData) {
     return this.post(`/admin/verifier/vendors/${vendorId}/approve`, reviewData);
+  }
+
+  // Bulk approve vendors
+  async bulkApproveVendors(vendorApprovals, globalComments) {
+    return this.post('/admin/verifier/vendors/bulk-approve', {
+      vendorApprovals,
+      globalComments
+    });
+  }
+
+  // Update vendor categories
+  async updateVendorCategories(vendorId, categories, reason) {
+    return this.put(`/admin/verifier/vendors/${vendorId}/categories`, {
+      categories,
+      reason
+    });
   }
 
   // Monitor transactions

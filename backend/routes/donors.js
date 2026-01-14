@@ -18,7 +18,7 @@ router.post('/donate',
   handleValidationErrors,
   async (req, res) => {
     try {
-      const { amount, transactionHash, donor } = req.body;
+      const { amount, category, transactionHash, donor } = req.body;
       const io = req.app.get('io');
 
       // Verify the donor address matches the authenticated user
@@ -29,8 +29,17 @@ router.post('/donate',
         });
       }
 
-      // Validate donation amount
+      // Validate donation amount and category
       businessRules.validateDonationAmount(parseFloat(amount));
+      
+      // Validate category if provided
+      const validCategories = ['Food', 'Medical', 'Shelter', 'Water', 'Clothing', 'Emergency Supplies'];
+      if (category && !validCategories.includes(category)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid donation category'
+        });
+      }
 
       // Check if transaction already exists
       const existingTransaction = await Transaction.findOne({ 
@@ -52,8 +61,10 @@ router.post('/donate',
         amount: amount.toString(),
         transactionHash,
         status: 'pending',
+        category: category || 'General',
         metadata: {
           donorAddress: donor,
+          category: category || 'General',
           timestamp: new Date()
         }
       });
@@ -78,6 +89,7 @@ router.post('/donate',
       io.emit('donation-received', {
         donor,
         amount,
+        category: category || 'General',
         transactionHash,
         timestamp: new Date()
       });
@@ -88,6 +100,7 @@ router.post('/donate',
           transactionId: transaction._id,
           transactionHash,
           amount,
+          category: category || 'General',
           status: 'pending',
           message: 'Donation recorded successfully'
         }
@@ -160,6 +173,7 @@ router.get('/history',
           donations: donations.map(donation => ({
             id: donation._id,
             amount: donation.amount,
+            category: donation.category || donation.metadata?.category || 'General',
             transactionHash: donation.transactionHash,
             status: donation.status,
             timestamp: donation.createdAt,
@@ -234,37 +248,88 @@ router.get('/impact',
       const totalBeneficiaries = parseInt(systemStats.totalBeneficiaries);
       const beneficiariesHelped = Math.floor(totalBeneficiaries * impactRatio);
 
-      // Get spending by category (aggregate data)
+      // Get spending by category (aggregate data) with donor's proportional impact
       const categorySpending = await Transaction.aggregate([
         {
           $match: {
             type: 'spending',
-            status: 'completed'
+            status: 'confirmed',
+            category: { $exists: true, $ne: null }
           }
         },
         {
           $group: {
-            _id: '$metadata.category',
+            _id: '$category',
             totalAmount: { $sum: { $toDouble: '$amount' } },
             count: { $sum: 1 }
           }
         }
       ]);
 
-      // Calculate donor's proportional impact by category
-      const categoriesSupported = categorySpending.map(cat => ({
-        category: cat._id,
-        donorImpact: (cat.totalAmount * impactRatio).toFixed(6),
-        transactionCount: Math.floor(cat.count * impactRatio)
-      }));
+      // Get donor's category-specific donations
+      const donorCategoryDonations = await Transaction.aggregate([
+        {
+          $match: {
+            type: 'donation',
+            from: userAddress,
+            status: 'confirmed',
+            category: { $exists: true, $ne: null }
+          }
+        },
+        {
+          $group: {
+            _id: '$category',
+            donorAmount: { $sum: { $toDouble: '$amount' } },
+            donorCount: { $sum: 1 }
+          }
+        }
+      ]);
 
-      // Calculate specific impact metrics
-      const impactMetrics = {
-        foodProvided: Math.floor((categorySpending.find(c => c._id === 'food')?.totalAmount || 0) * impactRatio),
-        shelterSupported: Math.floor((categorySpending.find(c => c._id === 'shelter')?.totalAmount || 0) * impactRatio),
-        medicalAid: Math.floor((categorySpending.find(c => c._id === 'medical')?.totalAmount || 0) * impactRatio),
-        educationSupport: Math.floor((categorySpending.find(c => c._id === 'education')?.totalAmount || 0) * impactRatio)
-      };
+      // Calculate donor's category-specific impact
+      const categoriesSupported = donorCategoryDonations.map(donorCat => {
+        const systemCat = categorySpending.find(c => c._id === donorCat._id);
+        const donorCategoryTotal = donorCat.donorAmount;
+        const systemCategoryTotal = systemCat?.totalAmount || 0;
+        const categoryImpactRatio = systemCategoryTotal > 0 ? donorCategoryTotal / systemCategoryTotal : 0;
+        
+        return {
+          category: donorCat._id,
+          donorContribution: donorCategoryTotal.toFixed(6),
+          systemTotal: systemCategoryTotal.toFixed(6),
+          impactRatio: categoryImpactRatio.toFixed(6),
+          donorTransactions: donorCat.donorCount,
+          systemTransactions: systemCat?.count || 0,
+          beneficiariesHelped: Math.floor((systemCat?.count || 0) * categoryImpactRatio)
+        };
+      });
+
+      // Calculate specific impact metrics based on donor's actual category contributions
+      const impactMetrics = {};
+      donorCategoryDonations.forEach(donorCat => {
+        const systemCat = categorySpending.find(c => c._id === donorCat._id);
+        const categoryImpactRatio = systemCat?.totalAmount > 0 ? donorCat.donorAmount / systemCat.totalAmount : 0;
+        
+        switch(donorCat._id.toLowerCase()) {
+          case 'food':
+            impactMetrics.foodProvided = Math.floor((systemCat?.count || 0) * categoryImpactRatio);
+            break;
+          case 'shelter':
+            impactMetrics.shelterSupported = Math.floor((systemCat?.count || 0) * categoryImpactRatio);
+            break;
+          case 'medical':
+            impactMetrics.medicalAid = Math.floor((systemCat?.count || 0) * categoryImpactRatio);
+            break;
+          case 'education':
+            impactMetrics.educationSupport = Math.floor((systemCat?.count || 0) * categoryImpactRatio);
+            break;
+        }
+      });
+
+      // Set defaults for missing categories
+      impactMetrics.foodProvided = impactMetrics.foodProvided || 0;
+      impactMetrics.shelterSupported = impactMetrics.shelterSupported || 0;
+      impactMetrics.medicalAid = impactMetrics.medicalAid || 0;
+      impactMetrics.educationSupport = impactMetrics.educationSupport || 0;
 
       res.json({
         success: true,

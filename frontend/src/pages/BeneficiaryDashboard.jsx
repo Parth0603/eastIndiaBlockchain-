@@ -59,52 +59,73 @@ const BeneficiaryDashboard = () => {
           const balance = parseFloat(balanceResponse.data.tokenBalance) / Math.pow(10, 18);
           setAidBalance(balance);
 
-          // Transform spending by category into aid categories
-          const categories = balanceResponse.data.spendingByCategory.map(cat => ({
-            id: cat.category.toLowerCase(),
-            name: cat.category.charAt(0).toUpperCase() + cat.category.slice(1),
-            icon: cat.category === 'food' ? '🍽️' : 
-                  cat.category === 'medical' ? '💊' : 
-                  cat.category === 'shelter' ? '🏠' : '📦',
-            units: Math.floor(parseFloat(cat.totalSpent) / 10), // Convert to units
-            color: cat.category === 'food' ? 'bg-blue-100 text-blue-800' :
-                   cat.category === 'medical' ? 'bg-purple-100 text-purple-800' :
-                   'bg-green-100 text-green-800',
-            iconBg: cat.category === 'food' ? 'bg-blue-500' :
-                    cat.category === 'medical' ? 'bg-purple-500' :
-                    'bg-green-500'
-          }));
+          // Use category-specific balances if available
+          if (balanceResponse.data.categoryBalances) {
+            const categories = balanceResponse.data.categoryBalances.map(cat => {
+              const availableBalance = parseFloat(cat.availableBalance) / Math.pow(10, 18);
+              const totalReceived = parseFloat(cat.totalReceived) / Math.pow(10, 18);
+              const totalSpent = parseFloat(cat.totalSpent) / Math.pow(10, 18);
+              
+              return {
+                id: cat.category.toLowerCase(),
+                name: cat.category,
+                icon: getCategoryIcon(cat.category),
+                units: Math.floor(availableBalance),
+                availableBalance: availableBalance,
+                totalReceived: totalReceived,
+                totalSpent: totalSpent,
+                transactionCount: cat.transactionCount,
+                color: getCategoryColor(cat.category),
+                iconBg: getCategoryIconBg(cat.category)
+              };
+            }).filter(cat => cat.availableBalance > 0 || cat.totalReceived > 0); // Show categories with balance or history
 
-          // Add default categories if none exist
-          if (categories.length === 0) {
-            setAidCategories([
-              {
-                id: 'food',
-                name: 'Food',
-                icon: '🍽️',
-                units: Math.floor(balance * 0.5),
-                color: 'bg-blue-100 text-blue-800',
-                iconBg: 'bg-blue-500'
-              },
-              {
-                id: 'medical',
-                name: 'Medical',
-                icon: '💊',
-                units: Math.floor(balance * 0.3),
-                color: 'bg-purple-100 text-purple-800',
-                iconBg: 'bg-purple-500'
-              },
-              {
-                id: 'shelter',
-                name: 'Shelter',
-                icon: '🏠',
-                units: Math.floor(balance * 0.2),
-                color: 'bg-green-100 text-green-800',
-                iconBg: 'bg-green-500'
-              }
-            ]);
-          } else {
             setAidCategories(categories);
+          } else {
+            // Fallback to old spending-based categories
+            const categories = balanceResponse.data.spendingByCategory.map(cat => ({
+              id: cat.category.toLowerCase(),
+              name: cat.category.charAt(0).toUpperCase() + cat.category.slice(1),
+              icon: getCategoryIcon(cat.category),
+              units: Math.floor(parseFloat(cat.totalSpent) / 10),
+              color: getCategoryColor(cat.category),
+              iconBg: getCategoryIconBg(cat.category)
+            }));
+
+            // Add default categories if none exist
+            if (categories.length === 0) {
+              setAidCategories([
+                {
+                  id: 'food',
+                  name: 'Food',
+                  icon: '🍽️',
+                  units: Math.floor(balance * 0.5),
+                  availableBalance: balance * 0.5,
+                  color: 'bg-blue-100 text-blue-800',
+                  iconBg: 'bg-blue-500'
+                },
+                {
+                  id: 'medical',
+                  name: 'Medical',
+                  icon: '💊',
+                  units: Math.floor(balance * 0.3),
+                  availableBalance: balance * 0.3,
+                  color: 'bg-purple-100 text-purple-800',
+                  iconBg: 'bg-purple-500'
+                },
+                {
+                  id: 'shelter',
+                  name: 'Shelter',
+                  icon: '🏠',
+                  units: Math.floor(balance * 0.2),
+                  availableBalance: balance * 0.2,
+                  color: 'bg-green-100 text-green-800',
+                  iconBg: 'bg-green-500'
+                }
+              ]);
+            } else {
+              setAidCategories(categories);
+            }
           }
         } else {
           // No balance data available
@@ -136,6 +157,43 @@ const BeneficiaryDashboard = () => {
 
     fetchBeneficiaryData();
   }, [isConnected, account, isAuthenticated]);
+
+  // Helper functions for category display
+  const getCategoryIcon = (category) => {
+    const iconMap = {
+      'Food': '🍽️',
+      'Medical': '💊',
+      'Shelter': '🏠',
+      'Water': '💧',
+      'Clothing': '👕',
+      'Emergency Supplies': '📦'
+    };
+    return iconMap[category] || '📦';
+  };
+
+  const getCategoryColor = (category) => {
+    const colorMap = {
+      'Food': 'bg-blue-100 text-blue-800',
+      'Medical': 'bg-purple-100 text-purple-800',
+      'Shelter': 'bg-green-100 text-green-800',
+      'Water': 'bg-cyan-100 text-cyan-800',
+      'Clothing': 'bg-pink-100 text-pink-800',
+      'Emergency Supplies': 'bg-orange-100 text-orange-800'
+    };
+    return colorMap[category] || 'bg-gray-100 text-gray-800';
+  };
+
+  const getCategoryIconBg = (category) => {
+    const bgMap = {
+      'Food': 'bg-blue-500',
+      'Medical': 'bg-purple-500',
+      'Shelter': 'bg-green-500',
+      'Water': 'bg-cyan-500',
+      'Clothing': 'bg-pink-500',
+      'Emergency Supplies': 'bg-orange-500'
+    };
+    return bgMap[category] || 'bg-gray-500';
+  };
 
   const getTimeAgo = (date) => {
     const now = new Date();
@@ -184,6 +242,20 @@ const BeneficiaryDashboard = () => {
       return;
     }
 
+    if (!selectedCategory) {
+      alert('Please select a category for this payment');
+      return;
+    }
+
+    // Validate category balance
+    const categoryBalance = selectedCategory.availableBalance || selectedCategory.units;
+    const requestedAmount = parseFloat(paymentAmount);
+    
+    if (requestedAmount > categoryBalance) {
+      alert(`Insufficient balance in ${selectedCategory.name} category. Available: ${categoryBalance.toFixed(2)} units, Requested: ${requestedAmount} units`);
+      return;
+    }
+
     setProcessingPayment(true);
     
     try {
@@ -191,25 +263,38 @@ const BeneficiaryDashboard = () => {
       const paymentData = {
         vendorId: scannedPaymentData.vendorId,
         paymentCode: scannedPaymentData.paymentCode,
-        amount: parseFloat(paymentAmount),
+        amount: requestedAmount,
         description: paymentDescription,
-        category: selectedCategory?.name || 'General',
+        category: selectedCategory.name,
         timestamp: Date.now()
       };
 
       const response = await apiService.processSpending(paymentData);
       
       if (response.success) {
-        // Update local state
-        setAidBalance(prev => prev - parseFloat(paymentAmount));
+        // Update local state - subtract from total balance
+        setAidBalance(prev => prev - requestedAmount);
+        
+        // Update category balance
+        setAidCategories(prev => prev.map(cat => {
+          if (cat.id === selectedCategory.id) {
+            return {
+              ...cat,
+              units: Math.max(0, cat.units - requestedAmount),
+              availableBalance: Math.max(0, (cat.availableBalance || cat.units) - requestedAmount),
+              totalSpent: (cat.totalSpent || 0) + requestedAmount
+            };
+          }
+          return cat;
+        }));
         
         // Add to recent transactions
         const newTransaction = {
           id: response.data.transactionId || `txn-${Date.now()}`,
           vendor: selectedVendor?.name || 'Unknown Vendor',
           items: paymentDescription,
-          amount: parseFloat(paymentAmount),
-          category: selectedCategory?.name || 'General',
+          amount: requestedAmount,
+          category: selectedCategory.name,
           date: 'Just now',
           status: 'confirmed'
         };
@@ -224,13 +309,25 @@ const BeneficiaryDashboard = () => {
         setSelectedCategory(null);
         setShowSpendingModal(false);
         
-        alert('Payment processed successfully!');
+        // Show success message with category balance info
+        const categoryBalanceInfo = response.data.categoryBalance;
+        if (categoryBalanceInfo) {
+          alert(`Payment processed successfully!\n\n${categoryBalanceInfo.category} Category:\n- Spent: ${categoryBalanceInfo.spentAmount} units\n- Remaining: ${parseFloat(categoryBalanceInfo.availableAfterSpending).toFixed(2)} units`);
+        } else {
+          alert('Payment processed successfully!');
+        }
       } else {
         throw new Error(response.message || 'Payment failed');
       }
     } catch (error) {
       console.error('Payment processing error:', error);
-      alert(`Payment failed: ${error.message}`);
+      
+      // Handle category-specific error messages
+      if (error.message.includes('Insufficient balance for')) {
+        alert(`Payment failed: ${error.message}`);
+      } else {
+        alert(`Payment failed: ${error.message}`);
+      }
     } finally {
       setProcessingPayment(false);
     }
@@ -358,9 +455,9 @@ const BeneficiaryDashboard = () => {
           </div>
         </div>
         
-        {/* Allowed Spending Categories */}
+        {/* Category-Specific Balances */}
         <div className="mb-8">
-          <h3 className="text-xl font-semibold text-gray-900 mb-6">Allowed Spending Categories</h3>
+          <h3 className="text-xl font-semibold text-gray-900 mb-6">Category-Specific Aid Balances</h3>
           <div className="grid md:grid-cols-3 gap-6">
             {aidCategories.map((category) => (
               <div
@@ -376,21 +473,78 @@ const BeneficiaryDashboard = () => {
                   </div>
                   <div>
                     <h4 className="text-lg font-semibold text-gray-900">{category.name}</h4>
-                    <div className="text-sm text-gray-600">({category.units} Units)</div>
+                    <div className="text-sm text-gray-600">
+                      Available: {category.units} Units
+                    </div>
                   </div>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-3">
+                
+                {/* Balance Progress Bar */}
+                <div className="w-full bg-gray-200 rounded-full h-3 mb-3">
                   <div 
                     className={`h-3 rounded-full ${category.iconBg}`}
-                    style={{ width: `${Math.min((category.units / Math.max(...aidCategories.map(c => c.units))) * 100, 100)}%` }}
+                    style={{ 
+                      width: `${Math.min((category.availableBalance || category.units) / Math.max(...aidCategories.map(c => c.availableBalance || c.units)) * 100, 100)}%` 
+                    }}
                   ></div>
                 </div>
-                <div className="text-xs text-gray-500 mt-2">
-                  Available: {category.units} units
+                
+                {/* Category Details */}
+                <div className="space-y-1 text-xs text-gray-500">
+                  {category.availableBalance !== undefined && (
+                    <>
+                      <div className="flex justify-between">
+                        <span>Available:</span>
+                        <span className="font-medium">{category.availableBalance.toFixed(2)} units</span>
+                      </div>
+                      {category.totalReceived > 0 && (
+                        <div className="flex justify-between">
+                          <span>Total Received:</span>
+                          <span className="text-green-600 font-medium">{category.totalReceived.toFixed(2)} units</span>
+                        </div>
+                      )}
+                      {category.totalSpent > 0 && (
+                        <div className="flex justify-between">
+                          <span>Total Spent:</span>
+                          <span className="text-red-600 font-medium">{category.totalSpent.toFixed(2)} units</span>
+                        </div>
+                      )}
+                      {category.transactionCount > 0 && (
+                        <div className="flex justify-between">
+                          <span>Transactions:</span>
+                          <span className="font-medium">{category.transactionCount}</span>
+                        </div>
+                      )}
+                    </>
+                  )}
+                  {category.availableBalance === undefined && (
+                    <div className="text-center">
+                      <span>Available: {category.units} units</span>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Category Status Indicator */}
+                <div className="mt-3 flex justify-center">
+                  <span className={`text-xs px-2 py-1 rounded-full ${
+                    (category.availableBalance || category.units) > 0 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-gray-100 text-gray-600'
+                  }`}>
+                    {(category.availableBalance || category.units) > 0 ? 'Available' : 'No Balance'}
+                  </span>
                 </div>
               </div>
             ))}
           </div>
+          
+          {aidCategories.length === 0 && (
+            <div className="bg-white rounded-3xl shadow-lg p-8 text-center">
+              <div className="text-4xl mb-4">📊</div>
+              <h4 className="text-lg font-semibold text-gray-900 mb-2">No Category Balances</h4>
+              <p className="text-gray-600">Your category-specific aid balances will appear here once you receive donations.</p>
+            </div>
+          )}
         </div>
 
         {/* Nearby Verified Vendors */}
@@ -601,22 +755,41 @@ const BeneficiaryDashboard = () => {
                   Category
                 </label>
                 <div className="grid grid-cols-3 gap-2">
-                  {aidCategories.map((category) => (
-                    <button
-                      key={category.id}
-                      onClick={() => setSelectedCategory(category)}
-                      className={`p-3 rounded-xl border text-center transition-colors ${
-                        selectedCategory?.id === category.id
-                          ? 'border-blue-500 bg-blue-50 text-blue-700'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      <div className="text-xl mb-1">{category.icon}</div>
-                      <div className="text-xs font-medium">{category.name}</div>
-                      <div className="text-xs text-gray-500">{category.units} units</div>
-                    </button>
-                  ))}
+                  {aidCategories.map((category) => {
+                    const availableBalance = category.availableBalance || category.units;
+                    const hasBalance = availableBalance > 0;
+                    
+                    return (
+                      <button
+                        key={category.id}
+                        onClick={() => hasBalance ? setSelectedCategory(category) : null}
+                        disabled={!hasBalance}
+                        className={`p-3 rounded-xl border text-center transition-colors ${
+                          selectedCategory?.id === category.id
+                            ? 'border-blue-500 bg-blue-50 text-blue-700'
+                            : hasBalance
+                            ? 'border-gray-200 hover:border-gray-300'
+                            : 'border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed'
+                        }`}
+                      >
+                        <div className="text-xl mb-1">{category.icon}</div>
+                        <div className="text-xs font-medium">{category.name}</div>
+                        <div className={`text-xs ${hasBalance ? 'text-gray-500' : 'text-gray-400'}`}>
+                          {availableBalance.toFixed(1)} units
+                        </div>
+                        {!hasBalance && (
+                          <div className="text-xs text-red-500 mt-1">No Balance</div>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
+                {aidCategories.length === 0 && (
+                  <div className="text-center py-4 text-gray-500">
+                    <div className="text-sm">No categories available</div>
+                    <div className="text-xs mt-1">Please receive donations first</div>
+                  </div>
+                )}
               </div>
 
               {/* Amount Input */}
@@ -631,11 +804,25 @@ const BeneficiaryDashboard = () => {
                   placeholder="Enter amount"
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   min="1"
-                  max={selectedCategory?.units || aidBalance}
+                  max={selectedCategory?.availableBalance || selectedCategory?.units || aidBalance}
+                  step="0.01"
                 />
                 {selectedCategory && (
                   <div className="text-xs text-gray-500 mt-1">
-                    Available in {selectedCategory.name}: {selectedCategory.units} units
+                    Available in {selectedCategory.name}: {(selectedCategory.availableBalance || selectedCategory.units).toFixed(2)} units
+                    {selectedCategory.totalReceived > 0 && (
+                      <div className="mt-1">
+                        <span className="text-green-600">Received: {selectedCategory.totalReceived.toFixed(2)}</span>
+                        {selectedCategory.totalSpent > 0 && (
+                          <span className="text-red-600 ml-2">Spent: {selectedCategory.totalSpent.toFixed(2)}</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+                {!selectedCategory && (
+                  <div className="text-xs text-red-500 mt-1">
+                    Please select a category first
                   </div>
                 )}
               </div>

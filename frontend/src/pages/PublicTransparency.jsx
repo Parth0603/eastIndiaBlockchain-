@@ -8,6 +8,10 @@ const PublicTransparency = () => {
     totalFundsReceived: 0,
     fundsDistributed: 0,
     activeBeneficiaries: 0,
+    categoryBreakdown: {
+      donations: [],
+      distributions: []
+    },
     loading: true,
     error: null
   });
@@ -29,6 +33,22 @@ const PublicTransparency = () => {
     totalFundsReceived: 1250000, // $1.25M
     fundsDistributed: 980000,    // $980K
     activeBeneficiaries: 3450,
+    categoryBreakdown: {
+      donations: [
+        { category: 'Food', amount: '450000', count: 1250, percentage: '36.0' },
+        { category: 'Medical', amount: '350000', count: 890, percentage: '28.0' },
+        { category: 'Shelter', amount: '200000', count: 560, percentage: '16.0' },
+        { category: 'Water', amount: '150000', count: 420, percentage: '12.0' },
+        { category: 'Emergency Supplies', amount: '100000', count: 280, percentage: '8.0' }
+      ],
+      distributions: [
+        { category: 'Food', amount: '380000', count: 1100, percentage: '38.8' },
+        { category: 'Medical', amount: '290000', count: 750, percentage: '29.6' },
+        { category: 'Shelter', amount: '160000', count: 480, percentage: '16.3' },
+        { category: 'Water', amount: '100000', count: 320, percentage: '10.2' },
+        { category: 'Emergency Supplies', amount: '50000', count: 150, percentage: '5.1' }
+      ]
+    },
     loading: false,
     error: null
   };
@@ -117,6 +137,7 @@ const PublicTransparency = () => {
             totalFundsReceived: parseFloat(response.data.totalRaised) / Math.pow(10, 18),
             fundsDistributed: parseFloat(response.data.fundsDistributed) / Math.pow(10, 18),
             activeBeneficiaries: response.data.peopleHelped,
+            categoryBreakdown: response.data.categoryBreakdown || { donations: [], distributions: [] },
             loading: false,
             error: null
           });
@@ -391,6 +412,235 @@ const PublicTransparency = () => {
           </div>
         </div>
 
+        {/* Category Breakdown Section */}
+        <div className="grid lg:grid-cols-2 gap-8 mb-12">
+          {/* Donation Categories */}
+          <div className="bg-white rounded-3xl shadow-lg p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-gray-900">Donations by Category</h3>
+              <div className="flex items-center text-green-600">
+                <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse mr-2"></div>
+                <span className="text-sm font-medium">Live</span>
+              </div>
+            </div>
+            
+            {liveStats.loading ? (
+              <div className="space-y-4">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="animate-pulse">
+                    <div className="flex justify-between items-center mb-2">
+                      <div className="h-4 bg-gray-200 rounded w-20"></div>
+                      <div className="h-4 bg-gray-200 rounded w-16"></div>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-3"></div>
+                  </div>
+                ))}
+              </div>
+            ) : liveStats.error ? (
+              <div className="text-center py-8">
+                <p className="text-red-500">{liveStats.error}</p>
+              </div>
+            ) : liveStats.categoryBreakdown.donations.length > 0 ? (
+              <div className="space-y-4">
+                {liveStats.categoryBreakdown.donations.map((category, index) => {
+                  const colors = ['bg-green-500', 'bg-blue-500', 'bg-purple-500', 'bg-orange-500', 'bg-red-500'];
+                  const bgColors = ['bg-green-100', 'bg-blue-100', 'bg-purple-100', 'bg-orange-100', 'bg-red-100'];
+                  const textColors = ['text-green-800', 'text-blue-800', 'text-purple-800', 'text-orange-800', 'text-red-800'];
+                  
+                  return (
+                    <div key={category.category} className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center">
+                          <div className={`w-4 h-4 ${colors[index % colors.length]} rounded-full mr-3`}></div>
+                          <span className="font-medium text-gray-900">{category.category}</span>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-semibold text-gray-900">
+                            {formatCurrency(parseFloat(category.amount), { isWei: false })}
+                          </div>
+                          <div className="text-sm text-gray-500">{category.count} donations</div>
+                        </div>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-3">
+                        <div 
+                          className={`h-3 rounded-full ${colors[index % colors.length]} transition-all duration-500`}
+                          style={{ width: `${category.percentage}%` }}
+                        ></div>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${bgColors[index % bgColors.length]} ${textColors[index % textColors.length]}`}>
+                          {category.percentage}% of total
+                        </span>
+                        <span className="text-gray-500">
+                          Avg: {formatCurrency(parseFloat(category.amount) / category.count, { isWei: false })}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <div className="text-4xl mb-4">📊</div>
+                <p className="text-gray-500">No category data available</p>
+              </div>
+            )}
+          </div>
+
+          {/* Distribution Categories */}
+          <div className="bg-white rounded-3xl shadow-lg p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-gray-900">Aid Distribution by Category</h3>
+              <div className="flex items-center text-blue-600">
+                <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse mr-2"></div>
+                <span className="text-sm font-medium">Live</span>
+              </div>
+            </div>
+            
+            {liveStats.loading ? (
+              <div className="space-y-4">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="animate-pulse">
+                    <div className="flex justify-between items-center mb-2">
+                      <div className="h-4 bg-gray-200 rounded w-20"></div>
+                      <div className="h-4 bg-gray-200 rounded w-16"></div>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-3"></div>
+                  </div>
+                ))}
+              </div>
+            ) : liveStats.error ? (
+              <div className="text-center py-8">
+                <p className="text-red-500">{liveStats.error}</p>
+              </div>
+            ) : liveStats.categoryBreakdown.distributions.length > 0 ? (
+              <div className="space-y-4">
+                {liveStats.categoryBreakdown.distributions.map((category, index) => {
+                  const colors = ['bg-emerald-500', 'bg-cyan-500', 'bg-violet-500', 'bg-amber-500', 'bg-rose-500'];
+                  const bgColors = ['bg-emerald-100', 'bg-cyan-100', 'bg-violet-100', 'bg-amber-100', 'bg-rose-100'];
+                  const textColors = ['text-emerald-800', 'text-cyan-800', 'text-violet-800', 'text-amber-800', 'text-rose-800'];
+                  
+                  return (
+                    <div key={category.category} className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center">
+                          <div className={`w-4 h-4 ${colors[index % colors.length]} rounded-full mr-3`}></div>
+                          <span className="font-medium text-gray-900">{category.category}</span>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-semibold text-gray-900">
+                            {formatCurrency(parseFloat(category.amount), { isWei: false })}
+                          </div>
+                          <div className="text-sm text-gray-500">{category.count} distributions</div>
+                        </div>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-3">
+                        <div 
+                          className={`h-3 rounded-full ${colors[index % colors.length]} transition-all duration-500`}
+                          style={{ width: `${category.percentage}%` }}
+                        ></div>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${bgColors[index % bgColors.length]} ${textColors[index % textColors.length]}`}>
+                          {category.percentage}% of total
+                        </span>
+                        <span className="text-gray-500">
+                          Avg: {formatCurrency(parseFloat(category.amount) / category.count, { isWei: false })}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <div className="text-4xl mb-4">📈</div>
+                <p className="text-gray-500">No distribution data available</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Category Efficiency Metrics */}
+        <div className="bg-white rounded-3xl shadow-lg p-6 mb-12">
+          <h3 className="text-xl font-semibold text-gray-900 mb-6">Category Efficiency & Impact</h3>
+          
+          {liveStats.loading ? (
+            <div className="grid md:grid-cols-3 gap-6">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="animate-pulse">
+                  <div className="h-6 bg-gray-200 rounded w-24 mb-2"></div>
+                  <div className="h-8 bg-gray-200 rounded w-16 mb-2"></div>
+                  <div className="h-4 bg-gray-200 rounded w-32"></div>
+                </div>
+              ))}
+            </div>
+          ) : liveStats.categoryBreakdown.donations.length > 0 && liveStats.categoryBreakdown.distributions.length > 0 ? (
+            <div className="grid md:grid-cols-3 gap-6">
+              {liveStats.categoryBreakdown.donations.map((donationCat) => {
+                const distributionCat = liveStats.categoryBreakdown.distributions.find(d => d.category === donationCat.category);
+                const donated = parseFloat(donationCat.amount);
+                const distributed = distributionCat ? parseFloat(distributionCat.amount) : 0;
+                const efficiency = donated > 0 ? ((distributed / donated) * 100).toFixed(1) : '0';
+                const remaining = donated - distributed;
+                
+                return (
+                  <div key={donationCat.category} className="bg-gray-50 rounded-2xl p-4">
+                    <div className="flex items-center mb-3">
+                      <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                        <span className="text-lg">
+                          {donationCat.category === 'Food' && '🍽️'}
+                          {donationCat.category === 'Medical' && '💊'}
+                          {donationCat.category === 'Shelter' && '🏠'}
+                          {donationCat.category === 'Water' && '💧'}
+                          {donationCat.category === 'Emergency Supplies' && '🆘'}
+                          {!['Food', 'Medical', 'Shelter', 'Water', 'Emergency Supplies'].includes(donationCat.category) && '📦'}
+                        </span>
+                      </div>
+                      <h4 className="font-semibold text-gray-900">{donationCat.category}</h4>
+                    </div>
+                    
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Donated:</span>
+                        <span className="font-medium text-green-600">
+                          {formatCurrency(donated, { isWei: false })}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Distributed:</span>
+                        <span className="font-medium text-blue-600">
+                          {formatCurrency(distributed, { isWei: false })}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Remaining:</span>
+                        <span className="font-medium text-orange-600">
+                          {formatCurrency(remaining, { isWei: false })}
+                        </span>
+                      </div>
+                      <div className="flex justify-between pt-2 border-t border-gray-200">
+                        <span className="text-gray-600">Efficiency:</span>
+                        <span className={`font-bold ${
+                          parseFloat(efficiency) >= 80 ? 'text-green-600' :
+                          parseFloat(efficiency) >= 60 ? 'text-yellow-600' : 'text-red-600'
+                        }`}>
+                          {efficiency}%
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <div className="text-4xl mb-4">⚡</div>
+              <p className="text-gray-500">Efficiency metrics will appear when data is available</p>
+            </div>
+          )}
+        </div>
+
         {/* Live Transaction Feed */}
         <div className="bg-white rounded-3xl shadow-lg p-6">
           <div className="flex items-center justify-between mb-6">
@@ -435,18 +685,33 @@ const PublicTransparency = () => {
                         {transaction.type === 'donation' && (
                           <>
                             <span className="text-green-600">Donation Received:</span> {formatCurrency(transaction.amount, { isWei: false })}
+                            {transaction.category && (
+                              <span className="ml-2 px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                                {transaction.category}
+                              </span>
+                            )}
                             {transaction.from && <> from {transaction.from}</>}
                           </>
                         )}
                         {transaction.type === 'spending' && (
                           <>
-                            <span className="text-blue-600">Aid Distributed:</span> {transaction.description}
+                            <span className="text-blue-600">Aid Distributed:</span> {formatCurrency(transaction.amount, { isWei: false })}
+                            {transaction.category && (
+                              <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                                {transaction.category}
+                              </span>
+                            )}
                             {transaction.to && <> to {transaction.to}</>}
                           </>
                         )}
                         {transaction.type === 'vendor_payment' && (
                           <>
                             <span className="text-purple-600">Vendor Paid:</span> {formatCurrency(transaction.amount, { isWei: false })}
+                            {transaction.category && (
+                              <span className="ml-2 px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
+                                {transaction.category}
+                              </span>
+                            )}
                             {transaction.to && <> to {transaction.to}</>}
                           </>
                         )}

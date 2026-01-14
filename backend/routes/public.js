@@ -7,12 +7,12 @@ const router = express.Router();
 
 /**
  * @route   GET /api/public/stats
- * @desc    Get public statistics
+ * @desc    Get public statistics with category breakdown
  * @access  Public
  */
 router.get('/stats', async (req, res) => {
   try {
-    // Get donation statistics
+    // Get donation statistics with category breakdown
     const donationStats = await Transaction.aggregate([
       {
         $match: { type: 'donation', status: 'confirmed' }
@@ -23,6 +23,27 @@ router.get('/stats', async (req, res) => {
           totalRaised: { $sum: { $toDecimal: '$amount' } },
           donationCount: { $sum: 1 }
         }
+      }
+    ]);
+
+    // Get donation statistics by category
+    const donationsByCategory = await Transaction.aggregate([
+      {
+        $match: { 
+          type: 'donation', 
+          status: 'confirmed',
+          category: { $exists: true, $ne: null }
+        }
+      },
+      {
+        $group: {
+          _id: '$category',
+          totalAmount: { $sum: { $toDecimal: '$amount' } },
+          donationCount: { $sum: 1 }
+        }
+      },
+      {
+        $sort: { totalAmount: -1 }
       }
     ]);
 
@@ -40,6 +61,27 @@ router.get('/stats', async (req, res) => {
           fundsDistributed: { $sum: { $toDecimal: '$amount' } },
           distributionCount: { $sum: 1 }
         }
+      }
+    ]);
+
+    // Get distribution statistics by category
+    const distributionByCategory = await Transaction.aggregate([
+      {
+        $match: { 
+          type: { $in: ['spending', 'vendor_payment'] }, 
+          status: 'confirmed',
+          category: { $exists: true, $ne: null }
+        }
+      },
+      {
+        $group: {
+          _id: '$category',
+          totalAmount: { $sum: { $toDecimal: '$amount' } },
+          transactionCount: { $sum: 1 }
+        }
+      },
+      {
+        $sort: { totalAmount: -1 }
       }
     ]);
 
@@ -63,7 +105,23 @@ router.get('/stats', async (req, res) => {
         peopleHelped: beneficiaryCount,
         transactions: totalTransactions,
         donationCount: donationStats[0]?.donationCount || 0,
-        distributionCount: distributionStats[0]?.distributionCount || 0
+        distributionCount: distributionStats[0]?.distributionCount || 0,
+        categoryBreakdown: {
+          donations: donationsByCategory.map(cat => ({
+            category: cat._id,
+            amount: cat.totalAmount.toString(),
+            count: cat.donationCount,
+            percentage: donationStats[0] ? 
+              ((cat.totalAmount / donationStats[0].totalRaised) * 100).toFixed(1) : '0'
+          })),
+          distributions: distributionByCategory.map(cat => ({
+            category: cat._id,
+            amount: cat.totalAmount.toString(),
+            count: cat.transactionCount,
+            percentage: distributionStats[0] ? 
+              ((cat.totalAmount / distributionStats[0].fundsDistributed) * 100).toFixed(1) : '0'
+          }))
+        }
       }
     });
   } catch (error) {
@@ -453,5 +511,112 @@ function getDisasterCategories(disasterType) {
   
   return categoryMap[disasterType] || ['Emergency Relief', 'Basic Needs'];
 }
+
+/**
+ * @route   GET /api/public/category-stats
+ * @desc    Get detailed category-specific statistics
+ * @access  Public
+ */
+router.get('/category-stats', async (req, res) => {
+  try {
+    const { category } = req.query;
+
+    // Build base query
+    const baseQuery = { status: 'confirmed' };
+    if (category) {
+      baseQuery.category = category;
+    }
+
+    // Get donation statistics by category
+    const donationsByCategory = await Transaction.aggregate([
+      {
+        $match: { 
+          ...baseQuery,
+          type: 'donation',
+          category: { $exists: true, $ne: null }
+        }
+      },
+      {
+        $group: {
+          _id: '$category',
+          totalAmount: { $sum: { $toDecimal: '$amount' } },
+          donationCount: { $sum: 1 },
+          avgDonation: { $avg: { $toDecimal: '$amount' } },
+          lastDonation: { $max: '$createdAt' }
+        }
+      },
+      {
+        $sort: { totalAmount: -1 }
+      }
+    ]);
+
+    // Get spending statistics by category
+    const spendingByCategory = await Transaction.aggregate([
+      {
+        $match: { 
+          ...baseQuery,
+          type: { $in: ['spending', 'vendor_payment'] },
+          category: { $exists: true, $ne: null }
+        }
+      },
+      {
+        $group: {
+          _id: '$category',
+          totalSpent: { $sum: { $toDecimal: '$amount' } },
+          transactionCount: { $sum: 1 },
+          avgTransaction: { $avg: { $toDecimal: '$amount' } },
+          lastTransaction: { $max: '$createdAt' }
+        }
+      },
+      {
+        $sort: { totalSpent: -1 }
+      }
+    ]);
+
+    // Get category efficiency (donations vs spending)
+    const categoryEfficiency = donationsByCategory.map(donation => {
+      const spending = spendingByCategory.find(s => s._id === donation._id);
+      const donated = parseFloat(donation.totalAmount.toString());
+      const spent = spending ? parseFloat(spending.totalSpent.toString()) : 0;
+      const efficiency = donated > 0 ? ((spent / donated) * 100).toFixed(1) : '0';
+      
+      return {
+        category: donation._id,
+        donated: donation.totalAmount.toString(),
+        spent: spent.toString(),
+        remaining: (donated - spent).toString(),
+        efficiency: `${efficiency}%`,
+        donationCount: donation.donationCount,
+        spendingCount: spending?.transactionCount || 0,
+        avgDonation: donation.avgDonation.toString(),
+        avgSpending: spending?.avgTransaction?.toString() || '0',
+        lastActivity: spending?.lastTransaction || donation.lastDonation
+      };
+    });
+
+    res.json({
+      success: true,
+      data: {
+        categoryStats: categoryEfficiency,
+        summary: {
+          totalCategories: donationsByCategory.length,
+          totalDonated: donationsByCategory.reduce((sum, cat) => 
+            sum + parseFloat(cat.totalAmount.toString()), 0).toString(),
+          totalSpent: spendingByCategory.reduce((sum, cat) => 
+            sum + parseFloat(cat.totalSpent.toString()), 0).toString(),
+          overallEfficiency: categoryEfficiency.length > 0 ? 
+            (categoryEfficiency.reduce((sum, cat) => 
+              sum + parseFloat(cat.efficiency.replace('%', '')), 0) / categoryEfficiency.length).toFixed(1) + '%' : '0%'
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error getting category stats:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
 
 export default router;
